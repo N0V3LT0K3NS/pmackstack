@@ -10,6 +10,20 @@ import { Button } from '@/components/ui/button';
 import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
 import { StoreFilter } from '@/components/filters/StoreFilter';
 import { dashboardApi } from '@/lib/api';
+import { 
+  BarChart3Icon, 
+  DownloadIcon, 
+  FilterIcon, 
+  TrendingUpIcon, 
+  StoreIcon,
+  ActivityIcon,
+  CalendarIcon,
+  MapPinIcon,
+  CheckCircleIcon,
+  AlertCircleIcon,
+  RefreshCwIcon
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { DashboardFilters } from '@shared/types/models';
 
 // Static demo data for testing styles
@@ -108,223 +122,316 @@ export function Dashboard() {
     }
   }, [storesData, filters.stores?.length]);
 
+  const getDateRangeLabel = () => {
+    if (!filters.startDate || !filters.endDate) return '';
+    const start = new Date(filters.startDate);
+    const end = new Date(filters.endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} (${diffDays} days)`;
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
-          <p className="text-muted-foreground mt-2">
-            Real-time performance metrics across all locations
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={() => handleExport('summary')}
-            disabled={exportLoading}
-          >
-            {exportLoading ? 'Exporting...' : 'Export Summary'}
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => handleExport('detailed')}
-            disabled={exportLoading}
-          >
-            {exportLoading ? 'Exporting...' : 'Export Detailed'}
-          </Button>
-        </div>
-      </div>
-
-      {/* Filters Section */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <DateRangeFilter
-            startDate={filters.startDate || ''}
-            endDate={filters.endDate || ''}
-            onDateChange={handleDateChange}
-          />
-        </div>
-        <div>
-          <StoreFilter
-            selectedStores={filters.stores || []}
-            onStoreChange={handleStoreChange}
-          />
-        </div>
-      </div>
-
-      {/* Active Filters Display */}
-      {(filters.stores?.length || 0) > 0 && (
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4 text-sm">
-              <span className="font-medium">Active Filters:</span>
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Date Range:</span>
-                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                  {filters.startDate} to {filters.endDate}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Stores:</span>
-                <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
-                  {filters.stores?.length === storesData?.stores?.length 
-                    ? 'All Stores' 
-                    : `${filters.stores?.length} Selected`}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* KPI Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <KPICard
-          title="Total Sales"
-          value={displayData?.summary.totalSales || 0}
-          previousValue={displayData?.summary.previousPeriod?.totalSales}
-          format="currency"
-          trend={displayData?.summary.yoyGrowth.sales}
-          loading={loading}
-        />
-        <KPICard
-          title="Total Labor $"
-          value={displayData?.summary.totalLaborCost || 0}
-          previousValue={displayData?.summary.previousPeriod?.totalLaborCost}
-          format="currency"
-          trend={displayData?.summary.yoyGrowth.labor}
-          loading={loading}
-          positiveIsGood={false}
-        />
-        <KPICard
-          title="Labor % of Sales"
-          value={displayData?.summary.laborCostPercent || 0}
-          previousValue={displayData?.summary.previousPeriod?.laborCostPercent}
-          format="percent"
-          trend={displayData?.summary.yoyGrowth.labor}
-          loading={loading}
-          positiveIsGood={false}
-        />
-        <KPICard
-          title="Total Transactions"
-          value={displayData?.summary.totalTransactions || 0}
-          previousValue={displayData?.summary.previousPeriod?.totalTransactions}
-          format="number"
-          trend={displayData?.summary.yoyGrowth.transactions}
-          loading={loading}
-        />
-        <KPICard
-          title="Avg Transaction Value"
-          value={displayData?.summary.avgTransactionValue || 0}
-          previousValue={displayData?.summary.previousPeriod?.avgTransactionValue}
-          format="currency"
-          trend={displayData?.summary.yoyGrowth.avgTransaction}
-          loading={loading}
-        />
-        <KPICard
-          title="Sales per Labor Hour"
-          value={displayData?.summary.salesPerLaborHour || 0}
-          previousValue={displayData?.summary.previousPeriod?.salesPerLaborHour}
-          format="currency"
-          trend={0} // Calculate trend if previous period data available
-          loading={loading}
-        />
-        <KPICard
-          title="Transactions per Labor Hour"
-          value={displayData?.summary.transactionsPerLaborHour || 0}
-          previousValue={displayData?.summary.previousPeriod?.transactionsPerLaborHour}
-          format="decimal"
-          trend={0} // Calculate trend if previous period data available
-          loading={loading}
-        />
-        <KPICard
-          title="Effective Hourly Wage"
-          value={displayData?.summary.effectiveHourlyWage || 0}
-          previousValue={displayData?.summary.previousPeriod?.effectiveHourlyWage}
-          format="currency"
-          trend={0} // Calculate trend if previous period data available
-          loading={loading}
-          positiveIsGood={false}
-        />
-        <KPICard
-          title="YoY Sales %"
-          value={displayData?.summary.yoyGrowth.sales || 0}
-          previousValue={0}
-          format="percent"
-          trend={0}
-          loading={loading}
-        />
-      </div>
-
-      {/* Charts Row */}
-      <div className="space-y-6">
-        <div className="grid gap-6 lg:grid-cols-2">
-          <EnhancedSalesChart
-            aggregateData={displayData?.timeSeries || []}
-            storeData={storeTimeSeriesData || {}}
-            loading={loading}
-          />
-          <LaborChart
-            aggregateData={displayData?.timeSeries || []}
-            storeData={storeTimeSeriesData || {}}
-            loading={loading}
-          />
-        </div>
-        
-        {/* Store Performance Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Store Performance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {displayData?.storePerformance.map((store) => (
-                <div
-                  key={store.storeCode}
-                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50"
-                >
-                  <div>
-                    <p className="font-medium">{store.storeName}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Performance Score: {store.performanceScore.toFixed(1)}
-                    </p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50">
+      <div className="space-y-8 p-6 w-full">
+        {/* Enhanced Header */}
+        <div className="relative">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-green-600/5 rounded-2xl" />
+          
+          <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl border border-gray-200/50 p-8">
+            <div className="flex justify-between items-start">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
+                    <BarChart3Icon className="h-6 w-6 text-white" />
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium">
-                      {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: 'USD',
-                      }).format(store.totalSales)}
-                    </p>
-                    <p className={`text-sm ${
-                      store.yoyGrowth >= 0 ? 'text-success-600' : 'text-error-600'
-                    }`}>
-                      {store.yoyGrowth >= 0 ? '+' : ''}{store.yoyGrowth.toFixed(1)}% YoY
+                  <div>
+                    <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                      Executive Dashboard
+                    </h1>
+                    <p className="text-gray-600 mt-1 flex items-center gap-2">
+                      <ActivityIcon className="h-4 w-4" />
+                      Real-time performance metrics across all Kilwins locations
                     </p>
                   </div>
                 </div>
-              ))}
+                
+                {/* Current Filter Summary */}
+                <div className="flex items-center gap-4 mt-4">
+                  <div className="flex items-center gap-2 text-sm">
+                    <CalendarIcon className="h-4 w-4 text-blue-600" />
+                    <span className="text-gray-600">Period:</span>
+                    <span className="font-semibold text-gray-900">{getDateRangeLabel()}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPinIcon className="h-4 w-4 text-green-600" />
+                    <span className="text-gray-600">Stores:</span>
+                    <span className="font-semibold text-gray-900">
+                      {filters.stores?.length === storesData?.stores?.length 
+                        ? 'All Locations' 
+                        : `${filters.stores?.length} Selected`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleExport('summary')}
+                  disabled={exportLoading}
+                  className="flex items-center gap-2 hover:bg-blue-50 hover:border-blue-200 transition-colors"
+                >
+                  <DownloadIcon className="h-4 w-4" />
+                  {exportLoading ? 'Exporting...' : 'Export Summary'}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleExport('detailed')}
+                  disabled={exportLoading}
+                  className="flex items-center gap-2 hover:bg-green-50 hover:border-green-200 transition-colors"
+                >
+                  <DownloadIcon className="h-4 w-4" />
+                  {exportLoading ? 'Exporting...' : 'Export Detailed'}
+                </Button>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+
+        {/* Enhanced Filters Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <FilterIcon className="h-5 w-5 text-gray-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Filters & Controls</h2>
+          </div>
+          
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <DateRangeFilter
+                startDate={filters.startDate || ''}
+                endDate={filters.endDate || ''}
+                onDateChange={handleDateChange}
+              />
+            </div>
+            <div>
+              <StoreFilter
+                selectedStores={filters.stores || []}
+                onStoreChange={handleStoreChange}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced KPI Grid */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <TrendingUpIcon className="h-5 w-5 text-gray-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Key Performance Indicators</h2>
+          </div>
+          
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <KPICard
+              title="Total Sales"
+              value={displayData?.summary.totalSales || 0}
+              previousValue={displayData?.summary.previousPeriod?.totalSales}
+              format="currency"
+              trend={displayData?.summary.yoyGrowth.sales}
+              loading={loading}
+            />
+            <KPICard
+              title="Total Labor $"
+              value={displayData?.summary.totalLaborCost || 0}
+              previousValue={displayData?.summary.previousPeriod?.totalLaborCost}
+              format="currency"
+              trend={displayData?.summary.yoyGrowth.labor}
+              loading={loading}
+              positiveIsGood={false}
+            />
+            <KPICard
+              title="Labor % of Sales"
+              value={displayData?.summary.laborCostPercent || 0}
+              previousValue={displayData?.summary.previousPeriod?.laborCostPercent}
+              format="percent"
+              trend={displayData?.summary.yoyGrowth.labor}
+              loading={loading}
+              positiveIsGood={false}
+            />
+            <KPICard
+              title="Total Transactions"
+              value={displayData?.summary.totalTransactions || 0}
+              previousValue={displayData?.summary.previousPeriod?.totalTransactions}
+              format="number"
+              trend={displayData?.summary.yoyGrowth.transactions}
+              loading={loading}
+            />
+            <KPICard
+              title="Avg Transaction Value"
+              value={displayData?.summary.avgTransactionValue || 0}
+              previousValue={displayData?.summary.previousPeriod?.avgTransactionValue}
+              format="currency"
+              trend={displayData?.summary.yoyGrowth.avgTransaction}
+              loading={loading}
+            />
+            <KPICard
+              title="Sales per Labor Hour"
+              value={displayData?.summary.salesPerLaborHour || 0}
+              previousValue={displayData?.summary.previousPeriod?.salesPerLaborHour}
+              format="currency"
+              trend={0} // Calculate trend if previous period data available
+              loading={loading}
+            />
+            <KPICard
+              title="Transactions per Labor Hour"
+              value={displayData?.summary.transactionsPerLaborHour || 0}
+              previousValue={displayData?.summary.previousPeriod?.transactionsPerLaborHour}
+              format="decimal"
+              trend={0} // Calculate trend if previous period data available
+              loading={loading}
+            />
+            <KPICard
+              title="Effective Hourly Wage"
+              value={displayData?.summary.effectiveHourlyWage || 0}
+              previousValue={displayData?.summary.previousPeriod?.effectiveHourlyWage}
+              format="currency"
+              trend={0} // Calculate trend if previous period data available
+              loading={loading}
+              positiveIsGood={false}
+            />
+            <KPICard
+              title="YoY Sales %"
+              value={displayData?.summary.yoyGrowth.sales || 0}
+              previousValue={0}
+              format="percent"
+              trend={0}
+              loading={loading}
+            />
+          </div>
+        </div>
+
+        {/* Enhanced Charts Section */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-2">
+            <TrendingUpIcon className="h-5 w-5 text-gray-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Performance Trends</h2>
+          </div>
+          
+          <div className="grid gap-6 lg:grid-cols-2">
+            <EnhancedSalesChart
+              aggregateData={displayData?.timeSeries || []}
+              storeData={storeTimeSeriesData || {}}
+              loading={loading}
+            />
+            <LaborChart
+              aggregateData={displayData?.timeSeries || []}
+              storeData={storeTimeSeriesData || {}}
+              loading={loading}
+            />
+          </div>
+        </div>
+        
+        {/* Enhanced Store Performance Table */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <StoreIcon className="h-5 w-5 text-gray-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Store Performance Rankings</h2>
+          </div>
+          
+          <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-gray-50/30">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-gray-900">
+                <TrendingUpIcon className="h-5 w-5 text-blue-600" />
+                Performance Overview
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {displayData?.storePerformance.map((store, index) => (
+                  <div
+                    key={store.storeCode}
+                    className={cn(
+                      "flex items-center justify-between p-4 rounded-xl transition-all duration-200",
+                      "hover:shadow-md hover:scale-[1.02] cursor-pointer",
+                      "bg-gradient-to-r from-white to-gray-50/50 border border-gray-200/50"
+                    )}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={cn(
+                        "flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold text-white",
+                        index === 0 && "bg-gradient-to-r from-yellow-400 to-yellow-500",
+                        index === 1 && "bg-gradient-to-r from-gray-400 to-gray-500", 
+                        index === 2 && "bg-gradient-to-r from-orange-400 to-orange-500",
+                        index > 2 && "bg-gradient-to-r from-blue-400 to-blue-500"
+                      )}>
+                        {index + 1}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">{store.storeName}</p>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-sm text-gray-600">
+                            Score: <span className="font-medium">{store.performanceScore.toFixed(1)}</span>
+                          </span>
+                          <div className={cn(
+                            "w-2 h-2 rounded-full",
+                            store.performanceScore >= 90 && "bg-green-400",
+                            store.performanceScore >= 80 && store.performanceScore < 90 && "bg-yellow-400",
+                            store.performanceScore < 80 && "bg-red-400"
+                          )} />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-lg text-gray-900">
+                        {new Intl.NumberFormat('en-US', {
+                          style: 'currency',
+                          currency: 'USD',
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
+                        }).format(store.totalSales)}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className={cn(
+                          "text-sm font-semibold",
+                          store.yoyGrowth >= 0 ? 'text-green-600' : 'text-red-600'
+                        )}>
+                          {store.yoyGrowth >= 0 ? '+' : ''}{store.yoyGrowth.toFixed(1)}% YoY
+                        </p>
+                        {store.yoyGrowth >= 0 ? (
+                          <TrendingUpIcon className="h-3 w-3 text-green-600" />
+                        ) : (
+                          <TrendingUpIcon className="h-3 w-3 text-red-600 rotate-180" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
       
-      {/* Status indicators */}
-      <div className="fixed bottom-4 right-4 space-y-2">
+      {/* Enhanced Status Indicators */}
+      <div className="fixed bottom-6 right-6 space-y-3 z-50">
         {loading && (
-          <div className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg">
-            Loading real data...
+          <div className="flex items-center gap-3 bg-blue-500 text-white px-4 py-3 rounded-xl shadow-lg backdrop-blur-sm">
+            <RefreshCwIcon className="h-4 w-4 animate-spin" />
+            <span className="font-medium">Loading real data...</span>
           </div>
         )}
         {error && (
-          <div className="bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg">
-            Using demo data (API unavailable)
+          <div className="flex items-center gap-3 bg-red-500 text-white px-4 py-3 rounded-xl shadow-lg backdrop-blur-sm">
+            <AlertCircleIcon className="h-4 w-4" />
+            <span className="font-medium">Using demo data (API unavailable)</span>
           </div>
         )}
         {!loading && !error && dashboardData && (
-          <div className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg">
-            Live data connected
+          <div className="flex items-center gap-3 bg-green-500 text-white px-4 py-3 rounded-xl shadow-lg backdrop-blur-sm">
+            <CheckCircleIcon className="h-4 w-4" />
+            <span className="font-medium">Live data connected</span>
           </div>
         )}
       </div>
