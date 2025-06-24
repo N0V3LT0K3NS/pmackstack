@@ -45,6 +45,11 @@ export function EnhancedSalesChart({
 }: EnhancedSalesChartProps) {
   const [viewMode, setViewMode] = useState<'aggregate' | 'stores'>('aggregate');
 
+  // Debug logging to help identify the issue
+  console.log('EnhancedSalesChart - storeData:', storeData);
+  console.log('EnhancedSalesChart - aggregateData:', aggregateData);
+  console.log('EnhancedSalesChart - loading:', loading);
+
   if (loading) {
     return (
       <Card>
@@ -278,10 +283,15 @@ export function EnhancedSalesChart({
         <div className="flex items-center justify-between">
           <CardTitle>Sales Trend</CardTitle>
           <div className="flex gap-2">
+            {/* Debug info to show what data we have */}
+            <span className="text-xs text-gray-500 mr-2">
+              Stores: {Object.keys(storeData).length} | Aggregate: {aggregateData.length}
+            </span>
             <Button
               variant={viewMode === 'aggregate' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setViewMode('aggregate')}
+              className="bg-blue-500 text-white border-2 border-blue-500 hover:bg-blue-600"
             >
               Aggregate
             </Button>
@@ -289,6 +299,7 @@ export function EnhancedSalesChart({
               variant={viewMode === 'stores' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setViewMode('stores')}
+              className="bg-green-500 text-white border-2 border-green-500 hover:bg-green-600"
             >
               By Store
             </Button>

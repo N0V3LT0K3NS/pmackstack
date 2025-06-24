@@ -7,7 +7,7 @@ interface KPICardProps {
   title: string;
   value: number;
   previousValue?: number;
-  format: "currency" | "number" | "percent";
+  format: "currency" | "number" | "percent" | "decimal";
   trend?: number;
   trendLabel?: string;
   subtitle?: string;
@@ -36,6 +36,8 @@ export function KPICard({
         return formatNumber(val);
       case "percent":
         return formatPercent(val);
+      case "decimal":
+        return val.toFixed(2);
       default:
         return val.toString();
     }

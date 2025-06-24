@@ -76,6 +76,7 @@ export const dashboardService = {
           SUM(total_sales::numeric) as total_sales,
           SUM(num_transactions) as total_transactions,
           SUM(total_labor_cost::numeric) as total_labor_cost,
+          SUM(variable_hours::numeric) as total_labor_hours,
           COUNT(DISTINCT store_code) as store_count
         FROM pos_weekly_data
         ${whereClause}
@@ -83,7 +84,8 @@ export const dashboardService = {
       previous_year AS (
         SELECT 
           SUM(total_sales_py::numeric) as total_sales,
-          SUM(num_transactions_py) as total_transactions
+          SUM(num_transactions_py) as total_transactions,
+          SUM(total_labor_percent_py::numeric * total_sales_py::numeric) as total_labor_cost
         FROM pos_weekly_data
         ${whereClause}
         AND total_sales_py IS NOT NULL
@@ -103,6 +105,23 @@ export const dashboardService = {
           ELSE 0 
         END as labor_cost_percent,
         COALESCE(c.store_count, 0) as store_count,
+        -- New KPIs for PRD requirements
+        COALESCE(c.total_labor_hours, 0) as total_labor_hours,
+        CASE 
+          WHEN c.total_labor_hours > 0 
+          THEN c.total_sales / c.total_labor_hours 
+          ELSE 0 
+        END as sales_per_labor_hour,
+        CASE 
+          WHEN c.total_labor_hours > 0 
+          THEN c.total_transactions / c.total_labor_hours 
+          ELSE 0 
+        END as transactions_per_labor_hour,
+        CASE 
+          WHEN c.total_labor_hours > 0 
+          THEN c.total_labor_cost / c.total_labor_hours 
+          ELSE 0 
+        END as effective_hourly_wage,
         -- Year over year calculations
         CASE 
           WHEN p.total_sales > 0 
@@ -119,7 +138,11 @@ export const dashboardService = {
           THEN (((c.total_sales / c.total_transactions) - (p.total_sales / p.total_transactions)) / (p.total_sales / p.total_transactions)) * 100
           ELSE 0 
         END as yoy_avg_transaction,
-        0 as yoy_labor  -- Simplified for now
+        CASE 
+          WHEN p.total_labor_cost > 0 AND p.total_sales > 0 AND c.total_sales > 0
+          THEN ((c.total_labor_cost / c.total_sales) - (p.total_labor_cost / p.total_sales)) / (p.total_labor_cost / p.total_sales) * 100
+          ELSE 0 
+        END as yoy_labor
       FROM current_period c
       CROSS JOIN previous_year p
     `;
@@ -138,6 +161,11 @@ export const dashboardService = {
       totalLaborCost: parseFloat(row.total_labor_cost) || 0,
       laborCostPercent: parseFloat(row.labor_cost_percent) || 0,
       storeCount: parseInt(row.store_count) || 0,
+      // New KPIs
+      totalLaborHours: parseFloat(row.total_labor_hours) || 0,
+      salesPerLaborHour: parseFloat(row.sales_per_labor_hour) || 0,
+      transactionsPerLaborHour: parseFloat(row.transactions_per_labor_hour) || 0,
+      effectiveHourlyWage: parseFloat(row.effective_hourly_wage) || 0,
       yoyGrowth: {
         sales: parseFloat(row.yoy_sales) || 0,
         transactions: parseFloat(row.yoy_transactions) || 0,
@@ -387,5 +415,29 @@ export const dashboardService = {
       performanceScore: parseFloat(row.performance_score) || 0,
       yoyGrowth: parseFloat(row.yoy_growth) || 0
     }));
+  },
+
+  async getDetailedWeeklyData(startDate: string, endDate: string, stores?: string[]) {
+    let query = `
+      SELECT 
+        pwd.*,
+        ps.store_name,
+        TO_CHAR(pwd.week_ending, 'YYYY-MM-DD') as week_ending
+      FROM pos_weekly_data pwd
+      JOIN pos_stores ps ON pwd.store_code = ps.store_code
+      WHERE pwd.week_ending BETWEEN $1 AND $2
+    `;
+    
+    const params: any[] = [startDate, endDate];
+    
+    if (stores && stores.length > 0) {
+      query += ` AND pwd.store_code = ANY($3)`;
+      params.push(stores);
+    }
+    
+    query += ` ORDER BY pwd.week_ending DESC, ps.store_name`;
+    
+    const result = await pool.query(query, params);
+    return result.rows;
   }
 }; 

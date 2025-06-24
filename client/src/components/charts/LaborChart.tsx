@@ -46,6 +46,11 @@ export function LaborChart({
   const [viewMode, setViewMode] = useState<'aggregate' | 'stores'>('aggregate');
   const [metricMode, setMetricMode] = useState<'cost' | 'hours' | 'percent'>('cost');
 
+  // Debug logging to help identify the issue
+  console.log('LaborChart - storeData:', storeData);
+  console.log('LaborChart - aggregateData:', aggregateData);
+  console.log('LaborChart - loading:', loading);
+
   if (loading) {
     return (
       <Card>
@@ -356,12 +361,16 @@ export function LaborChart({
                 %
               </Button>
             </div>
+            <span className="text-xs text-gray-500 mr-2">
+              Stores: {Object.keys(storeData).length} | Aggregate: {aggregateData.length}
+            </span>
             <div className="h-6 w-px bg-gray-300" />
             <div className="flex gap-1">
               <Button
                 variant={viewMode === 'aggregate' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('aggregate')}
+                className="bg-blue-500 text-white border-2 border-blue-500 hover:bg-blue-600"
               >
                 Aggregate
               </Button>
@@ -369,6 +378,7 @@ export function LaborChart({
                 variant={viewMode === 'stores' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('stores')}
+                className="bg-green-500 text-white border-2 border-green-500 hover:bg-green-600"
               >
                 By Store
               </Button>

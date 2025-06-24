@@ -13,13 +13,28 @@ const api = axios.create({
   },
 });
 
-// Request interceptor for error handling
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized
-      console.error('Unauthorized access');
+      // Handle unauthorized - redirect to login
+      localStorage.removeItem('auth_token');
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }
@@ -42,6 +57,36 @@ export const dashboardApi = {
     );
     return response.data.data!;
   },
+
+  exportCSV: async (filters?: DashboardFilters & { format?: 'summary' | 'detailed' }) => {
+    const params = new URLSearchParams();
+    
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.stores?.length) params.append('stores', filters.stores.join(','));
+    if (filters?.format) params.append('format', filters.format);
+    
+    const response = await api.get(`/dashboard/export-csv?${params.toString()}`, {
+      responseType: 'blob'
+    });
+    
+    // Create download link
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Extract filename from response headers or use default
+    const contentDisposition = response.headers['content-disposition'];
+    const filename = contentDisposition 
+      ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+      : 'dashboard_export.csv';
+    
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  }
 };
 
 // Store endpoints

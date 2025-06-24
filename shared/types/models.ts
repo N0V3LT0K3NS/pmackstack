@@ -54,6 +54,12 @@ export interface DashboardSummary {
   laborCostPercent: number;
   storeCount: number;
   
+  // Additional KPIs for PRD compliance
+  totalLaborHours: number;
+  salesPerLaborHour: number;
+  transactionsPerLaborHour: number;
+  effectiveHourlyWage: number;
+  
   // Year over Year
   yoyGrowth: {
     sales: number;
@@ -68,6 +74,10 @@ export interface DashboardSummary {
     totalTransactions: number;
     avgTransactionValue: number;
     laborCostPercent: number;
+    totalLaborCost?: number;
+    salesPerLaborHour?: number;
+    transactionsPerLaborHour?: number;
+    effectiveHourlyWage?: number;
   };
 }
 

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import api from '../lib/api';
 import type { TimeSeriesDataPoint } from '@shared/types/models';
 
 interface StoreTimeSeriesResponse {
@@ -19,13 +20,8 @@ export function useStoreTimeSeries(
       if (endDate) params.append('endDate', endDate);
       if (stores?.length) params.append('stores', stores.join(','));
 
-      const response = await fetch(`/api/dashboard/stores-timeseries?${params}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch store time series data');
-      }
-      
-      const result: StoreTimeSeriesResponse = await response.json();
-      return result.data;
+      const response = await api.get(`/dashboard/stores-timeseries?${params}`);
+      return response.data.data;
     },
     enabled: Boolean(startDate && endDate),
     staleTime: 5 * 60 * 1000, // 5 minutes

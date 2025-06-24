@@ -14,6 +14,15 @@ export function DateRangeFilter({ startDate, endDate, onDateChange }: DateRangeF
     let start: Date;
     
     switch (preset) {
+      case '4w':
+        start = new Date(today.getTime() - 4 * 7 * 24 * 60 * 60 * 1000);
+        break;
+      case '13w':
+        start = new Date(today.getTime() - 13 * 7 * 24 * 60 * 60 * 1000);
+        break;
+      case '52w':
+        start = new Date(today.getTime() - 52 * 7 * 24 * 60 * 60 * 1000);
+        break;
       case '7d':
         start = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
         break;
@@ -64,6 +73,15 @@ export function DateRangeFilter({ startDate, endDate, onDateChange }: DateRangeF
           <div>
             <label className="text-sm font-medium mb-2 block">Quick Select</label>
             <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => handlePresetClick('4w')}>
+                4 Weeks
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handlePresetClick('13w')}>
+                13 Weeks
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handlePresetClick('52w')}>
+                52 Weeks
+              </Button>
               <Button variant="outline" size="sm" onClick={() => handlePresetClick('7d')}>
                 Last 7 Days
               </Button>

@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
 import { StoreFilter } from '@/components/filters/StoreFilter';
+import { dashboardApi } from '@/lib/api';
 import type { DashboardFilters } from '@shared/types/models';
 
 // Static demo data for testing styles
@@ -17,12 +18,22 @@ const DEMO_DATA = {
     totalSales: 624106,
     totalTransactions: 33186,
     avgTransactionValue: 18.81,
+    totalLaborCost: 108714,
     laborCostPercent: 17.4,
+    storeCount: 5,
+    totalLaborHours: 5218,
+    salesPerLaborHour: 119.62,
+    transactionsPerLaborHour: 6.36,
+    effectiveHourlyWage: 20.84,
     previousPeriod: {
       totalSales: 580000,
       totalTransactions: 31000,
       avgTransactionValue: 18.70,
       laborCostPercent: 18.2,
+      totalLaborCost: 105360,
+      salesPerLaborHour: 112.40,
+      transactionsPerLaborHour: 6.01,
+      effectiveHourlyWage: 20.45,
     },
     yoyGrowth: {
       sales: 7.6,
@@ -53,6 +64,7 @@ export function Dashboard() {
     endDate: '2024-12-31',
     stores: [], // Empty means all stores
   });
+  const [exportLoading, setExportLoading] = useState(false);
 
   const { data: dashboardData, isLoading: isDashboardLoading, error } = useDashboard(filters);
   const { data: storesData, isLoading: isStoresLoading } = useStores();
@@ -75,6 +87,17 @@ export function Dashboard() {
     setFilters(prev => ({ ...prev, stores }));
   };
 
+  const handleExport = async (format: 'summary' | 'detailed') => {
+    setExportLoading(true);
+    try {
+      await dashboardApi.exportCSV({ ...filters, format });
+    } catch (error) {
+      console.error('Export failed:', error);
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   // Initialize with all stores selected when stores data loads
   useEffect(() => {
     if (storesData?.stores && filters.stores?.length === 0) {
@@ -88,11 +111,29 @@ export function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
-        <p className="text-muted-foreground mt-2">
-          Real-time performance metrics across all locations
-        </p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
+          <p className="text-muted-foreground mt-2">
+            Real-time performance metrics across all locations
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => handleExport('summary')}
+            disabled={exportLoading}
+          >
+            {exportLoading ? 'Exporting...' : 'Export Summary'}
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => handleExport('detailed')}
+            disabled={exportLoading}
+          >
+            {exportLoading ? 'Exporting...' : 'Export Detailed'}
+          </Button>
+        </div>
       </div>
 
       {/* Filters Section */}
@@ -138,7 +179,7 @@ export function Dashboard() {
       )}
 
       {/* KPI Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <KPICard
           title="Total Sales"
           value={displayData?.summary.totalSales || 0}
@@ -146,6 +187,24 @@ export function Dashboard() {
           format="currency"
           trend={displayData?.summary.yoyGrowth.sales}
           loading={loading}
+        />
+        <KPICard
+          title="Total Labor $"
+          value={displayData?.summary.totalLaborCost || 0}
+          previousValue={displayData?.summary.previousPeriod?.totalLaborCost}
+          format="currency"
+          trend={displayData?.summary.yoyGrowth.labor}
+          loading={loading}
+          positiveIsGood={false}
+        />
+        <KPICard
+          title="Labor % of Sales"
+          value={displayData?.summary.laborCostPercent || 0}
+          previousValue={displayData?.summary.previousPeriod?.laborCostPercent}
+          format="percent"
+          trend={displayData?.summary.yoyGrowth.labor}
+          loading={loading}
+          positiveIsGood={false}
         />
         <KPICard
           title="Total Transactions"
@@ -156,7 +215,7 @@ export function Dashboard() {
           loading={loading}
         />
         <KPICard
-          title="Average Transaction"
+          title="Avg Transaction Value"
           value={displayData?.summary.avgTransactionValue || 0}
           previousValue={displayData?.summary.previousPeriod?.avgTransactionValue}
           format="currency"
@@ -164,13 +223,37 @@ export function Dashboard() {
           loading={loading}
         />
         <KPICard
-          title="Labor Cost %"
-          value={displayData?.summary.laborCostPercent || 0}
-          previousValue={displayData?.summary.previousPeriod?.laborCostPercent}
-          format="percent"
-          trend={displayData?.summary.yoyGrowth.labor}
+          title="Sales per Labor Hour"
+          value={displayData?.summary.salesPerLaborHour || 0}
+          previousValue={displayData?.summary.previousPeriod?.salesPerLaborHour}
+          format="currency"
+          trend={0} // Calculate trend if previous period data available
+          loading={loading}
+        />
+        <KPICard
+          title="Transactions per Labor Hour"
+          value={displayData?.summary.transactionsPerLaborHour || 0}
+          previousValue={displayData?.summary.previousPeriod?.transactionsPerLaborHour}
+          format="decimal"
+          trend={0} // Calculate trend if previous period data available
+          loading={loading}
+        />
+        <KPICard
+          title="Effective Hourly Wage"
+          value={displayData?.summary.effectiveHourlyWage || 0}
+          previousValue={displayData?.summary.previousPeriod?.effectiveHourlyWage}
+          format="currency"
+          trend={0} // Calculate trend if previous period data available
           loading={loading}
           positiveIsGood={false}
+        />
+        <KPICard
+          title="YoY Sales %"
+          value={displayData?.summary.yoyGrowth.sales || 0}
+          previousValue={0}
+          format="percent"
+          trend={0}
+          loading={loading}
         />
       </div>
 

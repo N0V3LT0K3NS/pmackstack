@@ -1,6 +1,6 @@
-import { 
-  DashboardSummary, 
-  StorePerformance, 
+import type {
+  DashboardSummary,
+  StorePerformance,
   TimeSeriesDataPoint,
   Store,
   WeeklyData,

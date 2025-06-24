@@ -9,7 +9,7 @@ lsof -ti:5176 | xargs kill -9 2>/dev/null
 
 # Start backend server
 echo "Starting backend server on port 3002..."
-cd server && npm run dev &
+(cd server && npm run dev) &
 BACKEND_PID=$!
 
 # Wait a moment for backend to start
@@ -17,7 +17,7 @@ sleep 2
 
 # Start frontend server
 echo "Starting frontend server..."
-cd ../client && npm run dev &
+(cd client && npm run dev) &
 FRONTEND_PID=$!
 
 echo "Executive Dashboard is starting..."
