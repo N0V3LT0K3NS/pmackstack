@@ -46,10 +46,7 @@ export function LaborChart({
   const [viewMode, setViewMode] = useState<'aggregate' | 'stores'>('aggregate');
   const [metricMode, setMetricMode] = useState<'cost' | 'hours' | 'percent'>('cost');
 
-  // Debug logging to help identify the issue
-  console.log('LaborChart - storeData:', storeData);
-  console.log('LaborChart - aggregateData:', aggregateData);
-  console.log('LaborChart - loading:', loading);
+
 
   if (loading) {
     return (

@@ -45,10 +45,7 @@ export function EnhancedSalesChart({
 }: EnhancedSalesChartProps) {
   const [viewMode, setViewMode] = useState<'aggregate' | 'stores'>('aggregate');
 
-  // Debug logging to help identify the issue
-  console.log('EnhancedSalesChart - storeData:', storeData);
-  console.log('EnhancedSalesChart - aggregateData:', aggregateData);
-  console.log('EnhancedSalesChart - loading:', loading);
+
 
   if (loading) {
     return (
