@@ -15,20 +15,27 @@ interface WeeklyDataFormProps {
 export const WeeklyDataForm: React.FC<WeeklyDataFormProps> = ({ onSuccess, onError }) => {
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingLastWeek, setLoadingLastWeek] = useState(false);
   const [formData, setFormData] = useState<WeeklyEntryData>({
     storeCode: '',
-    fiscalYear: new Date().getFullYear(),
-    weekNumber: 1,
+    weekEnding: new Date().toISOString().split('T')[0],
     totalSales: 0,
     variableHours: 0,
     numTransactions: 0,
     averageWage: 0,
+    totalFixedCost: 0,
     notes: ''
   });
 
   useEffect(() => {
     loadStores();
   }, []);
+
+  useEffect(() => {
+    if (formData.storeCode) {
+      loadLastWeekData();
+    }
+  }, [formData.storeCode]);
 
   const loadStores = async () => {
     try {
@@ -44,6 +51,29 @@ export const WeeklyDataForm: React.FC<WeeklyDataFormProps> = ({ onSuccess, onErr
     }
   };
 
+  const loadLastWeekData = async () => {
+    if (!formData.storeCode) return;
+    
+    setLoadingLastWeek(true);
+    try {
+      const lastWeekData = await dataEntryApi.getLastWeekData(formData.storeCode);
+      
+      if (lastWeekData) {
+        setFormData(prev => ({
+          ...prev,
+          weekEnding: lastWeekData.nextWeekEnding,
+          averageWage: lastWeekData.lastWeekData.averageWage,
+          totalFixedCost: lastWeekData.lastWeekData.totalFixedCost
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to load last week data:', error);
+      // If no last week data, just keep current values
+    } finally {
+      setLoadingLastWeek(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -51,17 +81,23 @@ export const WeeklyDataForm: React.FC<WeeklyDataFormProps> = ({ onSuccess, onErr
     try {
       await dataEntryApi.submitWeeklyEntry(formData);
       
-      // Reset form
+      // Reset form but keep store selection
+      const currentStore = formData.storeCode;
       setFormData({
-        storeCode: formData.storeCode, // Keep store selection
-        fiscalYear: new Date().getFullYear(),
-        weekNumber: 1,
+        storeCode: currentStore,
+        weekEnding: new Date().toISOString().split('T')[0],
         totalSales: 0,
         variableHours: 0,
         numTransactions: 0,
-        averageWage: 0,
+        averageWage: formData.averageWage, // Keep average wage
+        totalFixedCost: formData.totalFixedCost, // Keep fixed cost
         notes: ''
       });
+      
+      // Reload last week data to get the new next week
+      if (currentStore) {
+        loadLastWeekData();
+      }
       
       onSuccess?.();
     } catch (error: any) {
@@ -106,29 +142,13 @@ export const WeeklyDataForm: React.FC<WeeklyDataFormProps> = ({ onSuccess, onErr
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fiscal Year
+              Week Ending Date
+              {loadingLastWeek && <span className="text-gray-500 text-xs ml-2">(Loading...)</span>}
             </label>
             <input
-              type="number"
-              min="2020"
-              max="2030"
-              value={formData.fiscalYear}
-              onChange={(e) => handleInputChange('fiscalYear', parseInt(e.target.value))}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Week Number
-            </label>
-            <input
-              type="number"
-              min="1"
-              max="53"
-              value={formData.weekNumber}
-              onChange={(e) => handleInputChange('weekNumber', parseInt(e.target.value))}
+              type="date"
+              value={formData.weekEnding || ''}
+              onChange={(e) => handleInputChange('weekEnding', e.target.value)}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -142,9 +162,25 @@ export const WeeklyDataForm: React.FC<WeeklyDataFormProps> = ({ onSuccess, onErr
               type="number"
               step="0.01"
               min="0"
-              value={formData.totalSales}
+              value={formData.totalSales || ''}
               onChange={(e) => handleInputChange('totalSales', parseFloat(e.target.value) || 0)}
               required
+              placeholder="0.00"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Number of Transactions
+            </label>
+            <input
+              type="number"
+              min="0"
+              value={formData.numTransactions || ''}
+              onChange={(e) => handleInputChange('numTransactions', parseInt(e.target.value) || 0)}
+              required
+              placeholder="0"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -157,23 +193,10 @@ export const WeeklyDataForm: React.FC<WeeklyDataFormProps> = ({ onSuccess, onErr
               type="number"
               step="0.1"
               min="0"
-              value={formData.variableHours}
+              value={formData.variableHours || ''}
               onChange={(e) => handleInputChange('variableHours', parseFloat(e.target.value) || 0)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Number of Transactions
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={formData.numTransactions}
-              onChange={(e) => handleInputChange('numTransactions', parseInt(e.target.value) || 0)}
-              required
+              placeholder="0.0"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -181,14 +204,32 @@ export const WeeklyDataForm: React.FC<WeeklyDataFormProps> = ({ onSuccess, onErr
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Average Wage ($/hour)
+              <span className="text-gray-500 text-xs ml-2">(Auto-filled from last week)</span>
             </label>
             <input
               type="number"
               step="0.01"
               min="0"
-              value={formData.averageWage}
+              value={formData.averageWage || ''}
               onChange={(e) => handleInputChange('averageWage', parseFloat(e.target.value) || 0)}
               required
+              placeholder="0.00"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Fixed Labor Cost ($)
+              <span className="text-gray-500 text-xs ml-2">(Auto-filled from last week)</span>
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.totalFixedCost || ''}
+              onChange={(e) => handleInputChange('totalFixedCost', parseFloat(e.target.value) || 0)}
+              placeholder="0.00"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -211,20 +252,27 @@ export const WeeklyDataForm: React.FC<WeeklyDataFormProps> = ({ onSuccess, onErr
           <Button
             type="button"
             variant="outline"
-            onClick={() => setFormData({
-              storeCode: '',
-              fiscalYear: new Date().getFullYear(),
-              weekNumber: 1,
-              totalSales: 0,
-              variableHours: 0,
-              numTransactions: 0,
-              averageWage: 0,
-              notes: ''
-            })}
+            onClick={() => {
+              const currentStore = formData.storeCode;
+              setFormData({
+                storeCode: currentStore,
+                weekEnding: new Date().toISOString().split('T')[0],
+                totalSales: 0,
+                variableHours: 0,
+                numTransactions: 0,
+                averageWage: 0,
+                totalFixedCost: 0,
+                notes: ''
+              });
+              // Reload last week data
+              if (currentStore) {
+                loadLastWeekData();
+              }
+            }}
           >
             Clear
           </Button>
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading || !formData.storeCode}>
             {loading ? 'Submitting...' : 'Submit Entry'}
           </Button>
         </div>

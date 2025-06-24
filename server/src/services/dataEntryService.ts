@@ -4,10 +4,12 @@ interface WeeklyEntryData {
   storeCode: string;
   fiscalYear: number;
   weekNumber: number;
+  weekEnding?: string;
   totalSales: number;
   variableHours: number;
   numTransactions: number;
   averageWage: number;
+  totalFixedCost?: number;
   notes?: string | null;
 }
 
@@ -34,31 +36,54 @@ export const dataEntryService = {
         throw new Error('Entry for this store and week already exists');
       }
 
+      // Get the last fixed cost if not provided
+      let totalFixedCost = entryData.totalFixedCost;
+      if (totalFixedCost === undefined) {
+        const lastFixedCostResult = await client.query(
+          'SELECT total_fixed_cost FROM pos_weekly_data WHERE store_code = $1 ORDER BY fiscal_year DESC, week_number DESC LIMIT 1',
+          [entryData.storeCode]
+        );
+        totalFixedCost = lastFixedCostResult.rows.length > 0 ? lastFixedCostResult.rows[0].total_fixed_cost : 0;
+      }
+
       // Calculate derived fields
-      const laborCost = entryData.variableHours * entryData.averageWage;
-      const laborPercent = entryData.totalSales > 0 ? (laborCost / entryData.totalSales) * 100 : 0;
+      const variableLaborCost = entryData.variableHours * entryData.averageWage;
+      const totalLaborCost = variableLaborCost + (totalFixedCost || 0);
+      const laborPercent = entryData.totalSales > 0 ? (totalLaborCost / entryData.totalSales) * 100 : 0;
+      const variableLaborPercent = entryData.totalSales > 0 ? (variableLaborCost / entryData.totalSales) * 100 : 0;
+      const fixedLaborPercent = entryData.totalSales > 0 ? ((totalFixedCost || 0) / entryData.totalSales) * 100 : 0;
       const avgTransaction = entryData.numTransactions > 0 ? entryData.totalSales / entryData.numTransactions : 0;
       const salesPerLaborHour = entryData.variableHours > 0 ? entryData.totalSales / entryData.variableHours : 0;
       const transactionsPerLaborHour = entryData.variableHours > 0 ? entryData.numTransactions / entryData.variableHours : 0;
 
+      // Generate week_iso format
+      const weekIso = `${entryData.fiscalYear}-${String(entryData.weekNumber).padStart(2, '0')}`;
+
       // Insert new entry
       const insertResult = await client.query(`
         INSERT INTO pos_weekly_data (
-          store_code, fiscal_year, week_number, total_sales, variable_hours,
-          num_transactions, average_wage, labor_cost, labor_percent, avg_transaction,
+          store_code, fiscal_year, week_number, week_iso, week_ending, total_sales, variable_hours,
+          num_transactions, average_wage, total_fixed_cost, variable_labor_cost, total_labor_cost, 
+          total_labor_percent, variable_labor_percent, fixed_labor_percent, avg_transaction_value,
           sales_per_labor_hour, transactions_per_labor_hour, notes, created_by, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, NOW())
         RETURNING id, created_at
       `, [
         entryData.storeCode,
         entryData.fiscalYear,
         entryData.weekNumber,
+        weekIso,
+        entryData.weekEnding,
         entryData.totalSales,
         entryData.variableHours,
         entryData.numTransactions,
         entryData.averageWage,
-        laborCost,
+        totalFixedCost,
+        variableLaborCost,
+        totalLaborCost,
         laborPercent,
+        variableLaborPercent,
+        fixedLaborPercent,
         avgTransaction,
         salesPerLaborHour,
         transactionsPerLaborHour,
@@ -72,7 +97,8 @@ export const dataEntryService = {
         id: insertResult.rows[0].id,
         createdAt: insertResult.rows[0].created_at,
         ...entryData,
-        laborCost,
+        totalFixedCost,
+        laborCost: totalLaborCost,
         laborPercent,
         avgTransaction,
         salesPerLaborHour,
@@ -200,5 +226,55 @@ export const dataEntryService = {
 
     const result = await pool.query(query, params);
     return result.rows;
+  },
+
+  async getLastWeekData(storeCode: string) {
+    const query = `
+      SELECT 
+        pwd.*,
+        ps.store_name,
+        pwd.week_ending,
+        pwd.total_fixed_cost,
+        pwd.average_wage
+      FROM pos_weekly_data pwd
+      JOIN pos_stores ps ON pwd.store_code = ps.store_code
+      WHERE pwd.store_code = $1
+      ORDER BY pwd.fiscal_year DESC, pwd.week_number DESC
+      LIMIT 1
+    `;
+
+    const result = await pool.query(query, [storeCode]);
+    
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    const lastWeek = result.rows[0];
+    
+    // Calculate the next week ending date
+    let nextWeekEnding: Date;
+    if (lastWeek.week_ending) {
+      nextWeekEnding = new Date(lastWeek.week_ending);
+      nextWeekEnding.setDate(nextWeekEnding.getDate() + 7);
+    } else {
+      // If no week ending, calculate based on fiscal year and week number
+      const baseDate = new Date(lastWeek.fiscal_year, 0, 1);
+      const daysToAdd = (lastWeek.week_number * 7) + 7;
+      nextWeekEnding = new Date(baseDate);
+      nextWeekEnding.setDate(baseDate.getDate() + daysToAdd);
+    }
+
+    return {
+      lastWeekData: {
+        weekEnding: lastWeek.week_ending,
+        averageWage: lastWeek.average_wage,
+        totalFixedCost: lastWeek.total_fixed_cost || 0,
+        totalSales: lastWeek.total_sales,
+        numTransactions: lastWeek.num_transactions,
+        variableHours: lastWeek.variable_hours
+      },
+      nextWeekEnding: nextWeekEnding.toISOString().split('T')[0],
+      storeName: lastWeek.store_name
+    };
   }
 }; 

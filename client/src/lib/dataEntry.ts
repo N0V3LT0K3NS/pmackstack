@@ -2,12 +2,14 @@ import api from './api';
 
 export interface WeeklyEntryData {
   storeCode: string;
-  fiscalYear: number;
-  weekNumber: number;
+  fiscalYear?: number;
+  weekNumber?: number;
+  weekEnding?: string;
   totalSales: number;
   variableHours: number;
   numTransactions: number;
   averageWage: number;
+  totalFixedCost?: number;
   notes?: string;
 }
 
@@ -61,6 +63,18 @@ export const dataEntryApi = {
 
   async getRecentEntries(limit: number = 10): Promise<RecentEntry[]> {
     const response = await api.get(`/data-entry/recent?limit=${limit}`);
+    if (!response.data.success) {
+      throw new Error('Failed to get recent entries');
+    }
+    return response.data.data;
+  },
+
+  async getLastWeekData(storeCode: string) {
+    const response = await api.get(`/data-entry/last-week/${storeCode}`);
+    
+    if (!response.data.success) {
+      throw new Error('Failed to get last week data');
+    }
     return response.data.data;
   }
 }; 

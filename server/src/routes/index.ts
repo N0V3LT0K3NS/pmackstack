@@ -48,4 +48,9 @@ router.get('/data-entry/recent',
   dataEntryController.getRecentEntries
 );
 
+router.get('/data-entry/last-week/:storeCode', 
+  authorize('bookkeeper', 'manager'), 
+  dataEntryController.getLastWeekData
+);
+
 export default router; 
