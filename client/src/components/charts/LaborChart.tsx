@@ -124,18 +124,34 @@ export function LaborChart({
   };
 
   const renderAggregateChart = () => {
-    const chartData = aggregateData.map(point => ({
-      ...point,
-      weekEnding: point.weekEnding || point.period,
-      currentMetric: getMetricValue(point),
-      previousMetric: point.previousYear ? getMetricValue({
+    const chartData = aggregateData.map(point => {
+      let previousMetric: number | undefined = undefined;
+      
+      if (point.previousYear) {
+        switch (metricMode) {
+          case 'cost':
+            // Use provided previous year labor cost, or calculate if not available
+            previousMetric = point.previousYear.laborCost || 
+              (point.previousYear.laborPercent && point.previousYear.sales ? 
+                (point.previousYear.laborPercent / 100) * point.previousYear.sales : undefined);
+            break;
+          case 'hours':
+            // Labor hours not typically available for previous year, but check if data exists
+            previousMetric = point.previousYear.laborHours || undefined;
+            break;
+          case 'percent':
+            previousMetric = point.previousYear.laborPercent;
+            break;
+        }
+      }
+      
+      return {
         ...point,
-        laborCost: point.previousYear.laborPercent && point.sales ? 
-          (point.previousYear.laborPercent / 100) * point.sales : undefined,
-        laborHours: undefined, // Not available for previous year
-        laborPercent: point.previousYear.laborPercent
-      } as TimeSeriesDataPoint) : undefined,
-    }));
+        weekEnding: point.weekEnding || point.period,
+        currentMetric: getMetricValue(point),
+        previousMetric,
+      };
+    });
 
     return (
       <ResponsiveContainer>
@@ -159,10 +175,6 @@ export function LaborChart({
             tickFormatter={(value) => formatMetricValue(value, true)}
           />
           <Tooltip content={<CustomTooltip />} />
-          <Legend 
-            wrapperStyle={{ paddingTop: '20px' }}
-            iconType="line"
-          />
           <Line
             type="monotone"
             dataKey="currentMetric"
@@ -204,13 +216,25 @@ export function LaborChart({
         if (point) {
           dataPoint[`${storeCode}_current`] = getMetricValue(point);
           if (point.previousYear) {
-            dataPoint[`${storeCode}_previous`] = getMetricValue({
-              ...point,
-              laborCost: point.previousYear.laborPercent && point.sales ? 
-                (point.previousYear.laborPercent / 100) * point.sales : undefined,
-              laborHours: undefined,
-              laborPercent: point.previousYear.laborPercent
-            } as TimeSeriesDataPoint);
+            let previousMetric: number | undefined = undefined;
+            
+            switch (metricMode) {
+              case 'cost':
+                // Use provided previous year labor cost, or calculate if not available
+                previousMetric = point.previousYear.laborCost || 
+                  (point.previousYear.laborPercent && point.previousYear.sales ? 
+                    (point.previousYear.laborPercent / 100) * point.previousYear.sales : undefined);
+                break;
+              case 'hours':
+                // Labor hours not typically available for previous year, but check if data exists
+                previousMetric = point.previousYear.laborHours || undefined;
+                break;
+              case 'percent':
+                previousMetric = point.previousYear.laborPercent;
+                break;
+            }
+            
+            dataPoint[`${storeCode}_previous`] = previousMetric;
           }
         }
       });
@@ -240,10 +264,6 @@ export function LaborChart({
             tickFormatter={(value) => formatMetricValue(value, true)}
           />
           <Tooltip content={<StoreTooltip />} />
-          <Legend 
-            wrapperStyle={{ paddingTop: '20px' }}
-            iconType="line"
-          />
           
           {/* Current year lines for each store */}
           {Object.keys(storeData).map(storeCode => (
@@ -251,11 +271,17 @@ export function LaborChart({
               key={`${storeCode}_current`}
               type="monotone"
               dataKey={`${storeCode}_current`}
-              name={`${STORE_NAMES[storeCode as keyof typeof STORE_NAMES]} (Current)`}
+              name={`${STORE_NAMES[storeCode as keyof typeof STORE_NAMES]}`}
               stroke={STORE_COLORS[storeCode as keyof typeof STORE_COLORS]}
               strokeWidth={2.5}
-              dot={{ r: 3, strokeWidth: 2, stroke: '#fff' }}
-              activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }}
+              dot={{ 
+                r: 4, 
+                fill: STORE_COLORS[storeCode as keyof typeof STORE_COLORS], 
+                strokeWidth: 2, 
+                stroke: '#fff' 
+              }}
+              activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
+              connectNulls={false}
             />
           ))}
           
@@ -265,7 +291,7 @@ export function LaborChart({
               key={`${storeCode}_previous`}
               type="monotone"
               dataKey={`${storeCode}_previous`}
-              name={`${STORE_NAMES[storeCode as keyof typeof STORE_NAMES]} (Previous)`}
+              name=""
               stroke={STORE_COLORS[storeCode as keyof typeof STORE_COLORS]}
               strokeWidth={1.5}
               strokeDasharray="6 3"

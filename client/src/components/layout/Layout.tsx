@@ -12,10 +12,10 @@ export function Layout() {
   
   return (
     <div className="min-h-screen bg-gray-50">
-      <TopBar onRefresh={handleRefresh} />
+        <TopBar onRefresh={handleRefresh} />
       <main className="w-full">
-        <Outlet />
-      </main>
+          <Outlet />
+        </main>
     </div>
   );
 } 

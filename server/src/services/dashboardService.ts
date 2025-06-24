@@ -214,9 +214,17 @@ export const dashboardService = {
           THEN (SUM(total_labor_cost::numeric) / SUM(total_sales::numeric)) * 100 
           ELSE 0 
         END as labor_percent,
+        SUM(total_labor_cost::numeric) as labor_cost,
+        SUM(variable_hours::numeric) as labor_hours,
         SUM(total_sales_py::numeric) as prev_sales,
         SUM(num_transactions_py) as prev_transactions,
-        AVG(total_labor_percent_py::numeric * 100) as prev_labor_percent
+        AVG(total_labor_percent_py::numeric * 100) as prev_labor_percent,
+        -- Calculate previous year labor cost
+        CASE 
+          WHEN SUM(total_sales_py::numeric) > 0 AND AVG(total_labor_percent_py::numeric) > 0
+          THEN SUM(total_sales_py::numeric) * AVG(total_labor_percent_py::numeric)
+          ELSE NULL
+        END as prev_labor_cost
       FROM pos_weekly_data
       ${whereClause}
       GROUP BY week_iso, fiscal_year, week_number
@@ -236,11 +244,14 @@ export const dashboardService = {
         transactions: parseInt(row.transactions) || 0,
         avgTransaction: parseFloat(row.avg_transaction) || 0,
         laborPercent: parseFloat(row.labor_percent) || 0,
+        laborCost: parseFloat(row.labor_cost) || 0,
+        laborHours: parseFloat(row.labor_hours) || 0,
         previousYear: (row.prev_sales && parseFloat(row.prev_sales) > 0) ? {
           sales: parseFloat(row.prev_sales),
           transactions: parseInt(row.prev_transactions) || 0,
           avgTransaction: parseInt(row.prev_transactions) > 0 ? parseFloat(row.prev_sales) / parseInt(row.prev_transactions) : 0,
-          laborPercent: parseFloat(row.prev_labor_percent) || 0
+          laborPercent: parseFloat(row.prev_labor_percent) || 0,
+          laborCost: parseFloat(row.prev_labor_cost) || undefined
         } : undefined
       };
     });

@@ -46,7 +46,7 @@ export function StoreFilter({ selectedStores, onStoreChange }: StoreFilterProps)
       onStoreChange(stores.map(s => s.storeCode));
     }
   };
-
+  
   const getSelectionSummary = () => {
     if (selectedStores.length === 0) return 'No stores selected';
     if (selectedStores.length === stores.length) return 'All stores selected';
@@ -106,8 +106,8 @@ export function StoreFilter({ selectedStores, onStoreChange }: StoreFilterProps)
               const isSelected = selectedStores.includes(store.storeCode);
               
               return (
-                <label 
-                  key={store.storeCode}
+              <label 
+                key={store.storeCode}
                   className={cn(
                     "group flex items-center space-x-3 cursor-pointer p-3 rounded-lg transition-all duration-200",
                     "hover:bg-gray-50 hover:shadow-sm active:scale-98",
@@ -116,10 +116,10 @@ export function StoreFilter({ selectedStores, onStoreChange }: StoreFilterProps)
                 >
                   {/* Custom Checkbox */}
                   <div className="relative">
-                    <input
-                      type="checkbox"
+                <input
+                  type="checkbox"
                       checked={isSelected}
-                      onChange={() => handleStoreToggle(store.storeCode)}
+                  onChange={() => handleStoreToggle(store.storeCode)}
                       className="sr-only"
                     />
                     <div className={cn(
@@ -147,13 +147,13 @@ export function StoreFilter({ selectedStores, onStoreChange }: StoreFilterProps)
                         isSelected ? "text-blue-900" : "text-gray-900"
                       )}>
                         {info?.name || store.storeCode.toUpperCase()}
-                      </span>
+                </span>
                       <span className={cn(
                         "text-xs px-1.5 py-0.5 rounded-full transition-all duration-200",
                         isSelected ? "bg-blue-200 text-blue-800" : "bg-gray-200 text-gray-600"
                       )}>
                         {store.storeCode}
-                      </span>
+                </span>
                     </div>
                     {info?.location && (
                       <div className="flex items-center gap-1 mt-0.5">
@@ -173,7 +173,7 @@ export function StoreFilter({ selectedStores, onStoreChange }: StoreFilterProps)
                       isSelected && "ring-2 ring-white"
                     )} />
                   )}
-                </label>
+              </label>
               );
             })}
           </div>
@@ -209,8 +209,8 @@ export function StoreFilter({ selectedStores, onStoreChange }: StoreFilterProps)
                     +{selectedStores.length - 3}
                   </span>
                 )}
-              </div>
-            )}
+            </div>
+          )}
           </div>
         </div>
       </CardContent>

@@ -109,6 +109,8 @@ export interface TimeSeriesDataPoint {
     transactions: number;
     avgTransaction: number;
     laborPercent: number;
+    laborCost?: number;
+    laborHours?: number;
   };
 }
 

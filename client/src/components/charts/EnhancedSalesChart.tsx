@@ -98,10 +98,6 @@ export function EnhancedSalesChart({
             tickFormatter={(value) => formatCurrency(value, true)}
           />
           <Tooltip content={<CustomTooltip />} />
-          <Legend 
-            wrapperStyle={{ paddingTop: '20px' }}
-            iconType="line"
-          />
           <Line
             type="monotone"
             dataKey="sales"
@@ -171,10 +167,6 @@ export function EnhancedSalesChart({
             tickFormatter={(value) => formatCurrency(value, true)}
           />
           <Tooltip content={<StoreTooltip />} />
-          <Legend 
-            wrapperStyle={{ paddingTop: '20px' }}
-            iconType="line"
-          />
           
           {/* Current year lines for each store */}
           {Object.keys(storeData).map(storeCode => (
@@ -182,11 +174,17 @@ export function EnhancedSalesChart({
               key={`${storeCode}_current`}
               type="monotone"
               dataKey={`${storeCode}_current`}
-              name={`${STORE_NAMES[storeCode as keyof typeof STORE_NAMES]} (Current)`}
+              name={`${STORE_NAMES[storeCode as keyof typeof STORE_NAMES]}`}
               stroke={STORE_COLORS[storeCode as keyof typeof STORE_COLORS]}
               strokeWidth={2.5}
-              dot={{ r: 3, strokeWidth: 2, stroke: '#fff' }}
-              activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }}
+              dot={{ 
+                r: 4, 
+                fill: STORE_COLORS[storeCode as keyof typeof STORE_COLORS], 
+                strokeWidth: 2, 
+                stroke: '#fff' 
+              }}
+              activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
+              connectNulls={false}
             />
           ))}
           
@@ -196,7 +194,7 @@ export function EnhancedSalesChart({
               key={`${storeCode}_previous`}
               type="monotone"
               dataKey={`${storeCode}_previous`}
-              name={`${STORE_NAMES[storeCode as keyof typeof STORE_NAMES]} (Previous)`}
+              name=""
               stroke={STORE_COLORS[storeCode as keyof typeof STORE_COLORS]}
               strokeWidth={1.5}
               strokeDasharray="6 3"
