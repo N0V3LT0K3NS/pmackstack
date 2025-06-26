@@ -46,15 +46,28 @@ export const dataEntryService = {
         totalFixedCost = lastFixedCostResult.rows.length > 0 ? lastFixedCostResult.rows[0].total_fixed_cost : 0;
       }
 
-      // Calculate derived fields
+      // Calculate derived fields with overflow protection
       const variableLaborCost = entryData.variableHours * entryData.averageWage;
       const totalLaborCost = variableLaborCost + (totalFixedCost || 0);
-      const laborPercent = entryData.totalSales > 0 ? (totalLaborCost / entryData.totalSales) * 100 : 0;
-      const variableLaborPercent = entryData.totalSales > 0 ? (variableLaborCost / entryData.totalSales) * 100 : 0;
-      const fixedLaborPercent = entryData.totalSales > 0 ? ((totalFixedCost || 0) / entryData.totalSales) * 100 : 0;
-      const avgTransaction = entryData.numTransactions > 0 ? entryData.totalSales / entryData.numTransactions : 0;
-      const salesPerLaborHour = entryData.variableHours > 0 ? entryData.totalSales / entryData.variableHours : 0;
-      const transactionsPerLaborHour = entryData.variableHours > 0 ? entryData.numTransactions / entryData.variableHours : 0;
+      
+      // Safely calculate percentages with caps to prevent overflow
+      const laborPercent = entryData.totalSales > 0 ? 
+        Math.min((totalLaborCost / entryData.totalSales) * 100, 9999.9999) : 0;
+      const variableLaborPercent = entryData.totalSales > 0 ? 
+        Math.min((variableLaborCost / entryData.totalSales) * 100, 9999.9999) : 0;
+      const fixedLaborPercent = entryData.totalSales > 0 ? 
+        Math.min(((totalFixedCost || 0) / entryData.totalSales) * 100, 9999.9999) : 0;
+      
+      // Calculate ratios with safety checks for division by zero/near-zero
+      const avgTransaction = entryData.numTransactions > 0 ? 
+        entryData.totalSales / entryData.numTransactions : 0;
+      
+      // Prevent extreme ratios from very small variable hours (minimum 0.01 hours)
+      const safeVariableHours = Math.max(entryData.variableHours, 0.01);
+      const salesPerLaborHour = entryData.variableHours > 0 ? 
+        Math.min(entryData.totalSales / safeVariableHours, 9999999999999.99) : 0;
+      const transactionsPerLaborHour = entryData.variableHours > 0 ? 
+        Math.min(entryData.numTransactions / safeVariableHours, 9999999999.99) : 0;
 
       // Generate week_iso format
       const weekIso = `${entryData.fiscalYear}-${String(entryData.weekNumber).padStart(2, '0')}`;
@@ -62,18 +75,17 @@ export const dataEntryService = {
       // Insert new entry
       const insertResult = await client.query(`
         INSERT INTO pos_weekly_data (
-          store_code, fiscal_year, week_number, week_iso, week_ending, total_sales, variable_hours,
+          store_code, fiscal_year, week_number, week_iso, total_sales, variable_hours,
           num_transactions, average_wage, total_fixed_cost, variable_labor_cost, total_labor_cost, 
           total_labor_percent, variable_labor_percent, fixed_labor_percent, avg_transaction_value,
           sales_per_labor_hour, transactions_per_labor_hour, notes, created_by, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, NOW())
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, NOW())
         RETURNING id, created_at
       `, [
         entryData.storeCode,
         entryData.fiscalYear,
         entryData.weekNumber,
         weekIso,
-        entryData.weekEnding,
         entryData.totalSales,
         entryData.variableHours,
         entryData.numTransactions,
@@ -204,6 +216,23 @@ export const dataEntryService = {
   },
 
   async getRecentEntries(limit: number = 10, storeFilter?: string[]) {
+    // First get the total count
+    let countQuery = `
+      SELECT COUNT(*) as total
+      FROM pos_weekly_data pwd
+      JOIN pos_stores ps ON pwd.store_code = ps.store_code
+    `;
+    
+    const countParams: any[] = [];
+    if (storeFilter && storeFilter.length > 0) {
+      countQuery += ` WHERE pwd.store_code = ANY($1)`;
+      countParams.push(storeFilter);
+    }
+    
+    const countResult = await pool.query(countQuery, countParams);
+    const totalCount = parseInt(countResult.rows[0].total);
+
+    // Then get the actual data
     let query = `
       SELECT 
         pwd.*,
@@ -225,17 +254,41 @@ export const dataEntryService = {
     params.push(limit);
 
     const result = await pool.query(query, params);
-    return result.rows;
+    
+    // Convert string numbers to actual numbers for frontend compatibility
+    const entries = result.rows.map(row => ({
+      ...row,
+      total_sales: parseFloat(row.total_sales) || 0,
+      variable_hours: parseFloat(row.variable_hours) || 0,
+      average_wage: parseFloat(row.average_wage) || 0,
+      total_fixed_cost: parseFloat(row.total_fixed_cost) || 0,
+      variable_labor_cost: parseFloat(row.variable_labor_cost) || 0,
+      total_labor_cost: parseFloat(row.total_labor_cost) || 0,
+      total_labor_percent: parseFloat(row.total_labor_percent) || 0,
+      variable_labor_percent: parseFloat(row.variable_labor_percent) || 0,
+      fixed_labor_percent: parseFloat(row.fixed_labor_percent) || 0,
+      avg_transaction_value: parseFloat(row.avg_transaction_value) || 0,
+      sales_per_labor_hour: parseFloat(row.sales_per_labor_hour) || 0,
+      transactions_per_labor_hour: parseFloat(row.transactions_per_labor_hour) || 0,
+      total_sales_py: parseFloat(row.total_sales_py) || 0,
+      variable_hours_py: parseFloat(row.variable_hours_py) || 0,
+      delta_sales_percent: parseFloat(row.delta_sales_percent) || 0,
+      delta_hours_percent: parseFloat(row.delta_hours_percent) || 0,
+      delta_total_labor_percent: parseFloat(row.delta_total_labor_percent) || 0
+    }));
+
+    return {
+      entries,
+      totalCount,
+      showing: entries.length
+    };
   },
 
   async getLastWeekData(storeCode: string) {
     const query = `
       SELECT 
         pwd.*,
-        ps.store_name,
-        pwd.week_ending,
-        pwd.total_fixed_cost,
-        pwd.average_wage
+        ps.store_name
       FROM pos_weekly_data pwd
       JOIN pos_stores ps ON pwd.store_code = ps.store_code
       WHERE pwd.store_code = $1
@@ -251,23 +304,20 @@ export const dataEntryService = {
 
     const lastWeek = result.rows[0];
     
-    // Calculate the next week ending date
-    let nextWeekEnding: Date;
-    if (lastWeek.week_ending) {
-      nextWeekEnding = new Date(lastWeek.week_ending);
-      nextWeekEnding.setDate(nextWeekEnding.getDate() + 7);
-    } else {
-      // If no week ending, calculate based on fiscal year and week number
-      const baseDate = new Date(lastWeek.fiscal_year, 0, 1);
-      const daysToAdd = (lastWeek.week_number * 7) + 7;
-      nextWeekEnding = new Date(baseDate);
-      nextWeekEnding.setDate(baseDate.getDate() + daysToAdd);
-    }
+    // Calculate the next week ending date based on fiscal year and week number
+    const baseDate = new Date(lastWeek.fiscal_year, 0, 1);
+    const daysToAdd = (lastWeek.week_number * 7) + 6; // End of current week
+    const currentWeekEnding = new Date(baseDate);
+    currentWeekEnding.setDate(baseDate.getDate() + daysToAdd);
+    
+    // Next week is 7 days later
+    const nextWeekEnding = new Date(currentWeekEnding);
+    nextWeekEnding.setDate(currentWeekEnding.getDate() + 7);
 
     return {
       lastWeekData: {
-        weekEnding: lastWeek.week_ending,
-        averageWage: lastWeek.average_wage,
+        weekEnding: currentWeekEnding.toISOString().split('T')[0],
+        averageWage: lastWeek.average_wage || 0,
         totalFixedCost: lastWeek.total_fixed_cost || 0,
         totalSales: lastWeek.total_sales,
         numTransactions: lastWeek.num_transactions,
@@ -276,5 +326,154 @@ export const dataEntryService = {
       nextWeekEnding: nextWeekEnding.toISOString().split('T')[0],
       storeName: lastWeek.store_name
     };
+  },
+
+  async getWeeklyEntryById(id: number) {
+    const query = `
+      SELECT 
+        pwd.*,
+        ps.store_name
+      FROM pos_weekly_data pwd
+      JOIN pos_stores ps ON pwd.store_code = ps.store_code
+      WHERE pwd.id = $1
+    `;
+
+    const result = await pool.query(query, [id]);
+    if (result.rows.length === 0) return null;
+    
+    const row = result.rows[0];
+    return {
+      ...row,
+      total_sales: parseFloat(row.total_sales) || 0,
+      variable_hours: parseFloat(row.variable_hours) || 0,
+      average_wage: parseFloat(row.average_wage) || 0,
+      total_fixed_cost: parseFloat(row.total_fixed_cost) || 0
+    };
+  },
+
+  async updateWeeklyEntry(entryData: any, userId: number) {
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+
+      // Get current entry to verify it exists
+      const existing = await client.query(
+        'SELECT * FROM pos_weekly_data WHERE id = $1',
+        [entryData.id]
+      );
+
+      if (existing.rows.length === 0) {
+        throw new Error('Entry not found');
+      }
+
+      // Get the last fixed cost if not provided
+      let totalFixedCost = entryData.totalFixedCost;
+      if (totalFixedCost === undefined) {
+        const lastFixedCostResult = await client.query(
+          'SELECT total_fixed_cost FROM pos_weekly_data WHERE store_code = $1 ORDER BY fiscal_year DESC, week_number DESC LIMIT 1',
+          [entryData.storeCode]
+        );
+        totalFixedCost = lastFixedCostResult.rows.length > 0 ? lastFixedCostResult.rows[0].total_fixed_cost : 0;
+      }
+
+      // Calculate derived fields with overflow protection
+      const variableLaborCost = entryData.variableHours * entryData.averageWage;
+      const totalLaborCost = variableLaborCost + (totalFixedCost || 0);
+      
+      // Safely calculate percentages with caps to prevent overflow
+      const laborPercent = entryData.totalSales > 0 ? 
+        Math.min((totalLaborCost / entryData.totalSales) * 100, 9999.9999) : 0;
+      const variableLaborPercent = entryData.totalSales > 0 ? 
+        Math.min((variableLaborCost / entryData.totalSales) * 100, 9999.9999) : 0;
+      const fixedLaborPercent = entryData.totalSales > 0 ? 
+        Math.min(((totalFixedCost || 0) / entryData.totalSales) * 100, 9999.9999) : 0;
+      
+      // Calculate ratios with safety checks for division by zero/near-zero
+      const avgTransaction = entryData.numTransactions > 0 ? 
+        entryData.totalSales / entryData.numTransactions : 0;
+      
+      // Prevent extreme ratios from very small variable hours (minimum 0.01 hours)
+      const safeVariableHours = Math.max(entryData.variableHours, 0.01);
+      const salesPerLaborHour = entryData.variableHours > 0 ? 
+        Math.min(entryData.totalSales / safeVariableHours, 9999999999999.99) : 0;
+      const transactionsPerLaborHour = entryData.variableHours > 0 ? 
+        Math.min(entryData.numTransactions / safeVariableHours, 9999999999.99) : 0;
+
+      // Update entry
+      const updateResult = await client.query(`
+        UPDATE pos_weekly_data SET
+          total_sales = $1,
+          variable_hours = $2,
+          num_transactions = $3,
+          average_wage = $4,
+          total_fixed_cost = $5,
+          variable_labor_cost = $6,
+          total_labor_cost = $7,
+          total_labor_percent = $8,
+          variable_labor_percent = $9,
+          fixed_labor_percent = $10,
+          avg_transaction_value = $11,
+          sales_per_labor_hour = $12,
+          transactions_per_labor_hour = $13,
+          notes = $14,
+          updated_at = NOW()
+        WHERE id = $15
+        RETURNING *
+      `, [
+        entryData.totalSales,
+        entryData.variableHours,
+        entryData.numTransactions,
+        entryData.averageWage,
+        totalFixedCost,
+        variableLaborCost,
+        totalLaborCost,
+        laborPercent,
+        variableLaborPercent,
+        fixedLaborPercent,
+        avgTransaction,
+        salesPerLaborHour,
+        transactionsPerLaborHour,
+        entryData.notes,
+        entryData.id
+      ]);
+
+      await client.query('COMMIT');
+      
+      return updateResult.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+
+  async deleteWeeklyEntry(id: number) {
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+
+      // Check if entry exists
+      const existing = await client.query(
+        'SELECT id FROM pos_weekly_data WHERE id = $1',
+        [id]
+      );
+
+      if (existing.rows.length === 0) {
+        throw new Error('Entry not found');
+      }
+
+      // Delete the entry
+      await client.query('DELETE FROM pos_weekly_data WHERE id = $1', [id]);
+
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 }; 

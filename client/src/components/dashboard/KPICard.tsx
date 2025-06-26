@@ -95,7 +95,7 @@ export function KPICard({
       <CardContent className="pt-0">
         <div className="space-y-4">
           {/* Main Value */}
-          <div className="flex items-baseline justify-between">
+        <div className="flex items-baseline justify-between">
             <div className="space-y-1">
               <div className={cn(
                 "font-bold tracking-tight transition-all duration-300 group-hover:scale-105",
@@ -104,13 +104,13 @@ export function KPICard({
               )}>
                 {formatValue(value)}
               </div>
-              {subtitle && (
+            {subtitle && (
                 <p className="text-xs text-gray-500 font-medium">{subtitle}</p>
-              )}
-            </div>
-            
+            )}
+          </div>
+          
             {/* Trend Indicator */}
-            {trend !== undefined && (
+          {trend !== undefined && (
               <div className={cn(
                 "flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-sm font-bold transition-all duration-300",
                 "shadow-sm group-hover:shadow-md",
@@ -128,7 +128,7 @@ export function KPICard({
               ) : (
                 isPositiveTrend ? (
                   <ArrowUpIcon className="h-3.5 w-3.5" />
-                ) : (
+              ) : (
                   <ArrowDownIcon className="h-3.5 w-3.5" />
                 )
               )}
@@ -136,19 +136,19 @@ export function KPICard({
                 {trendMagnitude.toFixed(1)}%
               </span>
             </div>
-            )}
-          </div>
-          
+          )}
+        </div>
+        
           {/* Previous Period Comparison */}
-          {previousValue !== undefined && (
+        {previousValue !== undefined && (
             <div className={cn(
               "pt-3 border-t border-gray-100 transition-all duration-300",
               "group-hover:border-gray-200"
             )}>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">
-                  {trendLabel || "Previous Period"}
-                </span>
+                {trendLabel || "Previous Period"}
+              </span>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-gray-700 tabular-nums">
                     {formatValue(previousValue)}
@@ -164,7 +164,7 @@ export function KPICard({
               </div>
             </div>
           )}
-        </div>
+          </div>
       </CardContent>
     </Card>
   );

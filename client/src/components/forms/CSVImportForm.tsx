@@ -1,164 +1,134 @@
-import React, { useState, useRef } from 'react';
-import { Card } from '../ui/card';
-import { Button } from '../ui/button';
+import React, { useState } from 'react';
 import { dataEntryApi } from '../../lib/dataEntry';
 import type { CSVImportResult } from '../../lib/dataEntry';
 import Papa from 'papaparse';
 
 interface CSVImportFormProps {
-  onSuccess?: (result: CSVImportResult) => void;
-  onError?: (error: string) => void;
+  onSuccess?: () => void;
 }
 
-export const CSVImportForm: React.FC<CSVImportFormProps> = ({ onSuccess, onError }) => {
-  const [loading, setLoading] = useState(false);
-  const [csvData, setCsvData] = useState<any[]>([]);
+const CSVImportForm: React.FC<CSVImportFormProps> = ({ onSuccess }) => {
+  const [file, setFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<any[]>([]);
-  const [fileName, setFileName] = useState<string>('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
+  const [result, setResult] = useState<CSVImportResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
 
-    setFileName(file.name);
-    setLoading(true);
+    setFile(selectedFile);
+    setError(null);
+    setResult(null);
 
-    Papa.parse(file, {
+    // Parse CSV for preview
+    Papa.parse(selectedFile, {
       header: true,
+      preview: 5, // Show first 5 rows
       skipEmptyLines: true,
       complete: (results) => {
         if (results.errors.length > 0) {
-          onError?.(`CSV parsing errors: ${results.errors.map(e => e.message).join(', ')}`);
-          setLoading(false);
+          setError('Error parsing CSV: ' + results.errors[0].message);
           return;
         }
-
-        setCsvData(results.data);
-        setPreviewData(results.data.slice(0, 5)); // Show first 5 rows for preview
-        setLoading(false);
+        setPreviewData(results.data);
       },
       error: (error) => {
-        onError?.(`Failed to parse CSV: ${error.message}`);
-        setLoading(false);
+        setError('Error reading file: ' + error.message);
       }
     });
   };
 
   const handleImport = async () => {
-    if (csvData.length === 0) {
-      onError?.('No data to import');
-      return;
-    }
+    if (!file) return;
 
-    setLoading(true);
+    setImporting(true);
+    setError(null);
+
     try {
-      const result = await dataEntryApi.importCSV(csvData);
-      onSuccess?.(result.data);
-      
-      // Reset form
-      setCsvData([]);
-      setPreviewData([]);
-      setFileName('');
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.error || 'Failed to import CSV';
-      onError?.(errorMessage);
-    } finally {
-      setLoading(false);
+      // Parse full CSV
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async (results) => {
+          try {
+            if (results.errors.length > 0) {
+              throw new Error('CSV parsing error: ' + results.errors[0].message);
+            }
+
+            const importResult = await dataEntryApi.importCSV(results.data);
+            setResult(importResult.data);
+            
+            if (importResult.data.successful > 0 && onSuccess) {
+              onSuccess();
+            }
+          } catch (err: any) {
+            setError(err.message || 'Failed to import CSV data');
+          } finally {
+            setImporting(false);
+          }
+        },
+        error: (error) => {
+          setError('Error reading file: ' + error.message);
+          setImporting(false);
+        }
+      });
+    } catch (err: any) {
+      setError(err.message || 'Failed to import CSV data');
+      setImporting(false);
     }
   };
 
-  const handleDownloadTemplate = async () => {
+  const downloadTemplate = async () => {
     try {
       await dataEntryApi.downloadCSVTemplate();
-    } catch (error) {
-      onError?.('Failed to download template');
-    }
-  };
-
-  const clearFile = () => {
-    setCsvData([]);
-    setPreviewData([]);
-    setFileName('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    } catch (err: any) {
+      setError(err.message || 'Failed to download template');
     }
   };
 
   return (
-    <Card className="p-6">
-      <h2 className="text-xl font-semibold mb-4">CSV Data Import</h2>
-      
-      <div className="space-y-4">
-        {/* Template Download */}
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <h3 className="font-medium text-blue-900 mb-2">Need a template?</h3>
-          <p className="text-sm text-blue-700 mb-3">
-            Download our CSV template to ensure your data is in the correct format.
-          </p>
-          <Button 
-            variant="outline" 
-            onClick={handleDownloadTemplate}
-            className="text-blue-700 border-blue-300 hover:bg-blue-100"
-          >
-            Download CSV Template
-          </Button>
-        </div>
+    <div className="space-y-6">
+      <div className="bg-blue-50 p-4 rounded-lg">
+        <h3 className="text-sm font-medium text-blue-900 mb-2">CSV Import Instructions</h3>
+        <ul className="text-sm text-blue-700 space-y-1">
+          <li>• Download the template to see the required format</li>
+          <li>• Include headers: storeCode, fiscalYear, weekNumber, totalSales, variableHours, numTransactions, averageWage</li>
+          <li>• Store codes should match existing stores (anna, char, fell, vabe, will)</li>
+          <li>• All numeric values should be positive</li>
+        </ul>
+      </div>
 
-        {/* File Upload */}
+      <div className="space-y-4">
+        <button
+          onClick={downloadTemplate}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Download CSV Template
+        </button>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Upload CSV File
+            Select CSV File
           </label>
-          <div className="flex items-center space-x-3">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv"
-              onChange={handleFileUpload}
-              className="block w-full text-sm text-gray-500
-                file:mr-4 file:py-2 file:px-4
-                file:rounded-full file:border-0
-                file:text-sm file:font-semibold
-                file:bg-blue-50 file:text-blue-700
-                hover:file:bg-blue-100"
-            />
-            {fileName && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={clearFile}
-                className="text-red-600 border-red-300 hover:bg-red-50"
-              >
-                Clear
-              </Button>
-            )}
-          </div>
-          {fileName && (
-            <p className="text-sm text-gray-600 mt-1">
-              Selected: {fileName} ({csvData.length} rows)
-            </p>
-          )}
+          <input
+            type="file"
+            accept=".csv"
+            onChange={handleFileChange}
+            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          />
         </div>
 
-        {/* Preview */}
         {previewData.length > 0 && (
           <div>
-            <h3 className="font-medium text-gray-900 mb-2">
-              Data Preview (first 5 rows)
-            </h3>
+            <h3 className="text-sm font-medium text-gray-700 mb-2">Preview (First 5 rows)</h3>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 text-sm">
                 <thead className="bg-gray-50">
                   <tr>
-                    {Object.keys(previewData[0]).map(header => (
-                      <th 
-                        key={header}
-                        className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
+                    {Object.keys(previewData[0]).map((header) => (
+                      <th key={header} className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         {header}
                       </th>
                     ))}
@@ -168,11 +138,8 @@ export const CSVImportForm: React.FC<CSVImportFormProps> = ({ onSuccess, onError
                   {previewData.map((row, index) => (
                     <tr key={index}>
                       {Object.values(row).map((value: any, cellIndex) => (
-                        <td 
-                          key={cellIndex}
-                          className="px-3 py-2 whitespace-nowrap text-gray-900"
-                        >
-                          {String(value)}
+                        <td key={cellIndex} className="px-3 py-2 whitespace-nowrap text-gray-900">
+                          {value}
                         </td>
                       ))}
                     </tr>
@@ -183,27 +150,50 @@ export const CSVImportForm: React.FC<CSVImportFormProps> = ({ onSuccess, onError
           </div>
         )}
 
-        {/* Import Button */}
-        <div className="flex justify-end space-x-3">
-          <Button
+        {file && (
+          <button
             onClick={handleImport}
-            disabled={loading || csvData.length === 0}
-            className="bg-green-600 hover:bg-green-700 text-white"
+            disabled={importing}
+            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors"
           >
-            {loading ? 'Importing...' : `Import ${csvData.length} Records`}
-          </Button>
-        </div>
+            {importing ? 'Importing...' : 'Import Data'}
+          </button>
+        )}
+      </div>
 
-        {/* Expected Format Info */}
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h3 className="font-medium text-gray-900 mb-2">Expected CSV Format:</h3>
-          <div className="text-sm text-gray-600 space-y-1">
-            <p><strong>Required columns:</strong> storeCode, fiscalYear, weekNumber, totalSales, variableHours, numTransactions, averageWage</p>
-            <p><strong>Optional columns:</strong> notes</p>
-            <p><strong>Example:</strong> storeCode=anna, fiscalYear=2025, weekNumber=1, totalSales=15000.00, variableHours=120.5, numTransactions=350, averageWage=15.50</p>
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
+
+      {result && (
+        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <h3 className="text-sm font-medium text-green-800 mb-2">Import Results</h3>
+          <div className="text-sm text-green-700">
+            <p>✅ Successfully imported: {result.successful} entries</p>
+            {result.failed > 0 && (
+              <>
+                <p>❌ Failed to import: {result.failed} entries</p>
+                {result.errors.length > 0 && (
+                  <div className="mt-2">
+                    <p className="font-medium">Errors:</p>
+                    <ul className="ml-4 space-y-1">
+                      {result.errors.map((error, index) => (
+                        <li key={index}>• {error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
-      </div>
-    </Card>
+      )}
+    </div>
   );
-}; 
+};
+
+export default CSVImportForm;
+
+ 

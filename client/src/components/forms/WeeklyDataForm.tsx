@@ -79,6 +79,27 @@ export const WeeklyDataForm: React.FC<WeeklyDataFormProps> = ({ onSuccess, onErr
     setLoading(true);
 
     try {
+      // Validate input ranges to prevent overflow
+      if (formData.variableHours < 0.1) {
+        onError?.('Variable hours must be at least 0.1 to prevent calculation errors');
+        setLoading(false);
+        return;
+      }
+      
+      if (formData.totalSales <= 0) {
+        onError?.('Total sales must be greater than 0');
+        setLoading(false);
+        return;
+      }
+
+      // Check for potential extreme ratios
+      const salesPerHour = formData.totalSales / formData.variableHours;
+      if (salesPerHour > 50000) {
+        onError?.('Sales per hour ratio is too high. Please check your variable hours.');
+        setLoading(false);
+        return;
+      }
+
       await dataEntryApi.submitWeeklyEntry(formData);
       
       // Reset form but keep store selection
@@ -192,11 +213,11 @@ export const WeeklyDataForm: React.FC<WeeklyDataFormProps> = ({ onSuccess, onErr
             <input
               type="number"
               step="0.1"
-              min="0"
+              min="0.1"
               value={formData.variableHours || ''}
               onChange={(e) => handleInputChange('variableHours', parseFloat(e.target.value) || 0)}
               required
-              placeholder="0.0"
+              placeholder="0.1"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>

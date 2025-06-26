@@ -146,11 +146,16 @@ export const dataEntryController = {
         storeFilter = user.stores;
       }
 
-      const entries = await dataEntryService.getRecentEntries(limit, storeFilter);
+      const result = await dataEntryService.getRecentEntries(limit, storeFilter);
       
       res.json({
         success: true,
-        data: entries
+        data: result.entries,
+        meta: {
+          totalCount: result.totalCount,
+          showing: result.showing,
+          limit: limit
+        }
       });
     } catch (error) {
       next(error);
@@ -177,6 +182,96 @@ export const dataEntryController = {
         data: lastWeekData
       });
     } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateWeeklyEntry(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const user = req.user!;
+      const { id } = req.params;
+
+      // Check validation errors
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ 
+          success: false, 
+          errors: errors.array() 
+        });
+      }
+
+      // Check if user has write access to this store
+      const { storeCode } = req.body;
+      if (user.role === 'manager' && user.stores && !user.stores.includes(storeCode)) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied to this store'
+        });
+      }
+
+      const entryData = {
+        id: parseInt(id),
+        storeCode: req.body.storeCode,
+        totalSales: parseFloat(req.body.totalSales),
+        variableHours: parseFloat(req.body.variableHours),
+        numTransactions: parseInt(req.body.numTransactions),
+        averageWage: parseFloat(req.body.averageWage),
+        totalFixedCost: req.body.totalFixedCost ? parseFloat(req.body.totalFixedCost) : undefined,
+        notes: req.body.notes || null
+      };
+
+      const result = await dataEntryService.updateWeeklyEntry(entryData, user.id);
+      
+      res.json({
+        success: true,
+        data: result
+      });
+    } catch (error: any) {
+      if (error.message.includes('not found')) {
+        return res.status(404).json({
+          success: false,
+          error: 'Entry not found'
+        });
+      }
+      next(error);
+    }
+  },
+
+  async deleteWeeklyEntry(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const user = req.user!;
+      const { id } = req.params;
+
+      // Get the entry first to check permissions
+      const entry = await dataEntryService.getWeeklyEntryById(parseInt(id));
+      if (!entry) {
+        return res.status(404).json({
+          success: false,
+          error: 'Entry not found'
+        });
+      }
+
+      // Check if user has write access to this store
+      if (user.role === 'manager' && user.stores && !user.stores.includes(entry.store_code)) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied to this store'
+        });
+      }
+
+      await dataEntryService.deleteWeeklyEntry(parseInt(id));
+      
+      res.json({
+        success: true,
+        message: 'Entry deleted successfully'
+      });
+    } catch (error: any) {
+      if (error.message.includes('not found')) {
+        return res.status(404).json({
+          success: false,
+          error: 'Entry not found'
+        });
+      }
       next(error);
     }
   }

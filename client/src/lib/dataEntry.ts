@@ -61,12 +61,15 @@ export const dataEntryApi = {
     window.URL.revokeObjectURL(url);
   },
 
-  async getRecentEntries(limit: number = 10): Promise<RecentEntry[]> {
+  async getRecentEntries(limit: number = 10): Promise<{entries: RecentEntry[], totalCount: number}> {
     const response = await api.get(`/data-entry/recent?limit=${limit}`);
     if (!response.data.success) {
       throw new Error('Failed to get recent entries');
     }
-    return response.data.data;
+    return {
+      entries: response.data.data,
+      totalCount: response.data.meta?.totalCount || response.data.data.length
+    };
   },
 
   async getLastWeekData(storeCode: string) {
@@ -76,5 +79,21 @@ export const dataEntryApi = {
       throw new Error('Failed to get last week data');
     }
     return response.data.data;
+  },
+
+  async updateWeeklyEntry(id: number, data: WeeklyEntryData) {
+    const response = await api.put(`/data-entry/weekly/${id}`, data);
+    if (!response.data.success) {
+      throw new Error('Failed to update entry');
+    }
+    return response.data.data;
+  },
+
+  async deleteWeeklyEntry(id: number) {
+    const response = await api.delete(`/data-entry/weekly/${id}`);
+    if (!response.data.success) {
+      throw new Error('Failed to delete entry');
+    }
+    return response.data;
   }
 }; 

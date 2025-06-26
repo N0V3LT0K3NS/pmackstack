@@ -37,12 +37,18 @@ export function TopBar({ onRefresh }: TopBarProps) {
   };
 
   const navigationItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: BarChart3, description: 'Performance metrics and analytics' },
+    { path: '/', label: 'Dashboard', icon: BarChart3, description: 'Performance metrics and analytics' },
     { path: '/data-entry', label: 'Data Entry', icon: Database, description: 'Weekly data input and CSV import' },
   ];
 
   const getCurrentPageName = () => {
-    const currentItem = navigationItems.find(item => location.pathname.startsWith(item.path));
+    // Handle root path specially
+    if (location.pathname === '/') {
+      return 'Dashboard';
+    }
+    const currentItem = navigationItems.find(item => 
+      item.path !== '/' && location.pathname.startsWith(item.path)
+    );
     return currentItem?.label || 'Dashboard';
   };
   
@@ -68,7 +74,9 @@ export function TopBar({ onRefresh }: TopBarProps) {
             <DropdownMenuSeparator />
             {navigationItems.map((item) => {
               const Icon = item.icon;
-              const isActive = location.pathname.startsWith(item.path);
+              const isActive = item.path === '/' 
+                ? location.pathname === '/' 
+                : location.pathname.startsWith(item.path);
               return (
                 <DropdownMenuItem
                   key={item.path}

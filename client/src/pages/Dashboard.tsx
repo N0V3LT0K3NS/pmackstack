@@ -147,7 +147,7 @@ export function Dashboard() {
                   <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
                     <BarChart3Icon className="h-6 w-6 text-white" />
                   </div>
-                  <div>
+      <div>
                     <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                       Executive Dashboard
                     </h1>
@@ -207,41 +207,41 @@ export function Dashboard() {
           <div className="flex items-center gap-2">
             <FilterIcon className="h-5 w-5 text-gray-600" />
             <h2 className="text-lg font-semibold text-gray-900">Filters & Controls</h2>
-          </div>
-          
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <DateRangeFilter
-                startDate={filters.startDate || ''}
-                endDate={filters.endDate || ''}
-                onDateChange={handleDateChange}
-              />
-            </div>
-            <div>
-              <StoreFilter
-                selectedStores={filters.stores || []}
-                onStoreChange={handleStoreChange}
-              />
-            </div>
-          </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <DateRangeFilter
+            startDate={filters.startDate || ''}
+            endDate={filters.endDate || ''}
+            onDateChange={handleDateChange}
+          />
         </div>
+        <div>
+          <StoreFilter
+            selectedStores={filters.stores || []}
+            onStoreChange={handleStoreChange}
+          />
+        </div>
+      </div>
+              </div>
 
         {/* Enhanced KPI Grid */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
             <TrendingUpIcon className="h-5 w-5 text-gray-600" />
             <h2 className="text-lg font-semibold text-gray-900">Key Performance Indicators</h2>
-          </div>
-          
+            </div>
+
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <KPICard
-              title="Total Sales"
-              value={displayData?.summary.totalSales || 0}
-              previousValue={displayData?.summary.previousPeriod?.totalSales}
-              format="currency"
-              trend={displayData?.summary.yoyGrowth.sales}
-              loading={loading}
-            />
+        <KPICard
+          title="Total Sales"
+          value={displayData?.summary.totalSales || 0}
+          previousValue={displayData?.summary.previousPeriod?.totalSales}
+          format="currency"
+          trend={displayData?.summary.yoyGrowth.sales}
+          loading={loading}
+        />
             <KPICard
               title="Total Labor $"
               value={displayData?.summary.totalLaborCost || 0}
@@ -260,23 +260,23 @@ export function Dashboard() {
               loading={loading}
               positiveIsGood={false}
             />
-            <KPICard
-              title="Total Transactions"
-              value={displayData?.summary.totalTransactions || 0}
-              previousValue={displayData?.summary.previousPeriod?.totalTransactions}
-              format="number"
-              trend={displayData?.summary.yoyGrowth.transactions}
-              loading={loading}
-            />
-            <KPICard
+        <KPICard
+          title="Total Transactions"
+          value={displayData?.summary.totalTransactions || 0}
+          previousValue={displayData?.summary.previousPeriod?.totalTransactions}
+          format="number"
+          trend={displayData?.summary.yoyGrowth.transactions}
+          loading={loading}
+        />
+        <KPICard
               title="Avg Transaction Value"
-              value={displayData?.summary.avgTransactionValue || 0}
-              previousValue={displayData?.summary.previousPeriod?.avgTransactionValue}
-              format="currency"
-              trend={displayData?.summary.yoyGrowth.avgTransaction}
-              loading={loading}
-            />
-            <KPICard
+          value={displayData?.summary.avgTransactionValue || 0}
+          previousValue={displayData?.summary.previousPeriod?.avgTransactionValue}
+          format="currency"
+          trend={displayData?.summary.yoyGrowth.avgTransaction}
+          loading={loading}
+        />
+        <KPICard
               title="Sales per Labor Hour"
               value={displayData?.summary.salesPerLaborHour || 0}
               previousValue={displayData?.summary.previousPeriod?.salesPerLaborHour}
@@ -298,9 +298,9 @@ export function Dashboard() {
               previousValue={displayData?.summary.previousPeriod?.effectiveHourlyWage}
               format="currency"
               trend={0} // Calculate trend if previous period data available
-              loading={loading}
-              positiveIsGood={false}
-            />
+          loading={loading}
+          positiveIsGood={false}
+        />
             <KPICard
               title="YoY Sales %"
               value={displayData?.summary.yoyGrowth.sales || 0}
@@ -310,26 +310,26 @@ export function Dashboard() {
               loading={loading}
             />
           </div>
-        </div>
+      </div>
 
         {/* Enhanced Charts Section */}
-        <div className="space-y-6">
+      <div className="space-y-6">
           <div className="flex items-center gap-2">
             <TrendingUpIcon className="h-5 w-5 text-gray-600" />
             <h2 className="text-lg font-semibold text-gray-900">Performance Trends</h2>
           </div>
           
-          <div className="grid gap-6 lg:grid-cols-2">
-            <EnhancedSalesChart
-              aggregateData={displayData?.timeSeries || []}
-              storeData={storeTimeSeriesData || {}}
-              loading={loading}
-            />
-            <LaborChart
-              aggregateData={displayData?.timeSeries || []}
-              storeData={storeTimeSeriesData || {}}
-              loading={loading}
-            />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <EnhancedSalesChart
+            aggregateData={displayData?.timeSeries || []}
+            storeData={storeTimeSeriesData || {}}
+            loading={loading}
+          />
+          <LaborChart
+            aggregateData={displayData?.timeSeries || []}
+            storeData={storeTimeSeriesData || {}}
+            loading={loading}
+          />
           </div>
         </div>
         
@@ -346,12 +346,12 @@ export function Dashboard() {
                 <TrendingUpIcon className="h-5 w-5 text-blue-600" />
                 Performance Overview
               </CardTitle>
-            </CardHeader>
-            <CardContent>
+          </CardHeader>
+          <CardContent>
               <div className="space-y-3">
                 {displayData?.storePerformance.map((store, index) => (
-                  <div
-                    key={store.storeCode}
+                <div
+                  key={store.storeCode}
                     className={cn(
                       "flex items-center justify-between p-4 rounded-xl transition-all duration-200",
                       "hover:shadow-md hover:scale-[1.02] cursor-pointer",
@@ -368,7 +368,7 @@ export function Dashboard() {
                       )}>
                         {index + 1}
                       </div>
-                      <div>
+                  <div>
                         <p className="font-semibold text-gray-900">{store.storeName}</p>
                         <div className="flex items-center gap-3 mt-1">
                           <span className="text-sm text-gray-600">
@@ -382,35 +382,35 @@ export function Dashboard() {
                           )} />
                         </div>
                       </div>
-                    </div>
-                    <div className="text-right">
+                  </div>
+                  <div className="text-right">
                       <p className="font-bold text-lg text-gray-900">
-                        {new Intl.NumberFormat('en-US', {
-                          style: 'currency',
-                          currency: 'USD',
+                      {new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: 'USD',
                           minimumFractionDigits: 0,
                           maximumFractionDigits: 0,
-                        }).format(store.totalSales)}
-                      </p>
+                      }).format(store.totalSales)}
+                    </p>
                       <div className="flex items-center gap-2">
                         <p className={cn(
                           "text-sm font-semibold",
                           store.yoyGrowth >= 0 ? 'text-green-600' : 'text-red-600'
                         )}>
-                          {store.yoyGrowth >= 0 ? '+' : ''}{store.yoyGrowth.toFixed(1)}% YoY
-                        </p>
+                      {store.yoyGrowth >= 0 ? '+' : ''}{store.yoyGrowth.toFixed(1)}% YoY
+                    </p>
                         {store.yoyGrowth >= 0 ? (
                           <TrendingUpIcon className="h-3 w-3 text-green-600" />
                         ) : (
                           <TrendingUpIcon className="h-3 w-3 text-red-600 rotate-180" />
                         )}
                       </div>
-                    </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
         </div>
       </div>
       

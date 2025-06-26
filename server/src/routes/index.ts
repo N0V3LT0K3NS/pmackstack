@@ -26,31 +26,35 @@ router.get('/stores', storesController.getStores);
 router.get('/stores/:storeCode/metrics', storesController.getStoreMetrics);
 router.get('/stores/compare', storesController.compareStores);
 
-// Data entry routes - bookkeepers and managers can access
+// Data entry routes - all authenticated users can access
 router.post('/data-entry/weekly', 
-  authorize('bookkeeper', 'manager'), 
   dataEntryController.validateWeeklyEntry, 
   dataEntryController.submitWeeklyEntry
 );
 
 router.post('/data-entry/import-csv', 
-  authorize('bookkeeper', 'manager'), 
   dataEntryController.importCSV
 );
 
 router.get('/data-entry/csv-template', 
-  authorize('bookkeeper', 'manager'), 
   dataEntryController.getCSVTemplate
 );
 
 router.get('/data-entry/recent', 
-  authorize('bookkeeper', 'manager'), 
   dataEntryController.getRecentEntries
 );
 
 router.get('/data-entry/last-week/:storeCode', 
-  authorize('bookkeeper', 'manager'), 
   dataEntryController.getLastWeekData
+);
+
+router.put('/data-entry/weekly/:id', 
+  dataEntryController.validateWeeklyEntry, 
+  dataEntryController.updateWeeklyEntry
+);
+
+router.delete('/data-entry/weekly/:id', 
+  dataEntryController.deleteWeeklyEntry
 );
 
 export default router; 

@@ -24,7 +24,7 @@ export const storesController = {
         storeCode: row.store_code,
         storeName: row.store_name
       }));
-
+      
       res.json({
         success: true,
         data: { stores }
