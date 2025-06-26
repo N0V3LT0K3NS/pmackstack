@@ -91,8 +91,10 @@ export const dashboardApi = {
 
 // Store endpoints
 export const storeApi = {
-  getStores: async (): Promise<StoreListResponse> => {
-    const response = await api.get<ApiResponse<StoreListResponse>>('/stores');
+  getStores: async (brand?: string): Promise<StoreListResponse> => {
+    const params = new URLSearchParams();
+    if (brand) params.append('brand', brand);
+    const response = await api.get<ApiResponse<StoreListResponse>>(`/stores${params.toString() ? `?${params.toString()}` : ''}`);
     return response.data.data!;
   },
   
