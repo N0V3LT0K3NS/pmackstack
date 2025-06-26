@@ -6,28 +6,52 @@ export const storesController = {
   async getStores(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const user = req.user!;
+      const brandFilter = req.query.brand as string;
       
-      let query = 'SELECT * FROM pos_stores';
+      let query = `
+        SELECT s.*, b.name as brand_name 
+        FROM pos_stores s
+        LEFT JOIN brands b ON s.brand_id = b.brand_id
+      `;
       let params: any[] = [];
+      let conditions: string[] = [];
+      
+      // Filter by brand if specified
+      if (brandFilter) {
+        conditions.push(`b.name = $${params.length + 1}`);
+        params.push(brandFilter);
+      }
       
       // For managers, only show their assigned stores
       if (user.role === 'manager' && user.stores) {
-        query += ' WHERE store_code = ANY($1)';
+        conditions.push(`s.store_code = ANY($${params.length + 1})`);
         params.push(user.stores);
       }
       
-      query += ' ORDER BY store_name';
+      if (conditions.length > 0) {
+        query += ' WHERE ' + conditions.join(' AND ');
+      }
+      
+      query += ' ORDER BY b.name, s.store_name';
       
       const result = await pool.query(query, params);
       
       const stores = result.rows.map(row => ({
         storeCode: row.store_code,
-        storeName: row.store_name
+        storeName: row.store_name,
+        brand: row.brand_name || 'Kilwins' // Default to Kilwins for backward compatibility
       }));
+      
+      // Also get available brands for filtering
+      const brandsResult = await pool.query('SELECT brand_id, name FROM brands ORDER BY name');
+      const brands = brandsResult.rows;
       
       res.json({
         success: true,
-        data: { stores }
+        data: { 
+          stores,
+          brands
+        }
       });
     } catch (error) {
       next(error);

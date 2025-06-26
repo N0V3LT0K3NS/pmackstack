@@ -3,6 +3,7 @@ import { dashboardController } from '../controllers/dashboardController';
 import { storesController } from '../controllers/storesController';
 import { authController } from '../controllers/authController';
 import { dataEntryController } from '../controllers/dataEntryController';
+import { renojaController } from '../controllers/renojaController';
 import { authenticate, authorize } from '../middleware/auth';
 
 const router = Router();
@@ -55,6 +56,16 @@ router.put('/data-entry/weekly/:id',
 
 router.delete('/data-entry/weekly/:id', 
   dataEntryController.deleteWeeklyEntry
+);
+
+// Renoja-specific routes
+router.get('/renoja/dashboard', renojaController.getDashboardOverview);
+router.get('/renoja/recent', renojaController.getRecentEntries);
+router.get('/renoja/last-week/:storeCode', renojaController.getLastWeekData);
+
+router.post('/renoja/weekly', 
+  renojaController.validateRenojaEntry,
+  renojaController.submitWeeklyEntry
 );
 
 export default router; 
