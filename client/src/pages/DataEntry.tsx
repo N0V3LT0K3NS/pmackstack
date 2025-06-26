@@ -1,90 +1,70 @@
 import React, { useState } from 'react';
-import { WeeklyDataForm } from '../components/forms/WeeklyDataForm';
-import CSVImportForm from '../components/forms/CSVImportForm';
-import RecentEntriesTable from '../components/forms/RecentEntriesTable';
+import { BrandTabs } from '@/components/ui/brand-tabs';
+import { KilwinsDataEntryContent } from '@/components/forms/KilwinsDataEntryContent';
+import { RenojaDataEntryContent } from '@/components/forms/RenojaDataEntryContent';
+import { 
+  FileTextIcon, 
+  ActivityIcon,
+} from 'lucide-react';
 
 export const DataEntry: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'manual' | 'import' | 'recent'>('manual');
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [activeBrand, setActiveBrand] = useState<'kilwins' | 'renoja'>('kilwins');
 
-  const handleFormSuccess = () => {
-    setMessage({ type: 'success', text: 'Weekly data submitted successfully!' });
-    setTimeout(() => setMessage(null), 5000);
+  // Persist tab selection to localStorage
+  React.useEffect(() => {
+    const savedBrand = localStorage.getItem('data-entry-active-brand') as 'kilwins' | 'renoja';
+    if (savedBrand) {
+      setActiveBrand(savedBrand);
+    }
+  }, []);
+
+  const handleBrandChange = (brand: 'kilwins' | 'renoja') => {
+    setActiveBrand(brand);
+    localStorage.setItem('data-entry-active-brand', brand);
   };
-
-  const handleFormError = (error: string) => {
-    setMessage({ type: 'error', text: error });
-    setTimeout(() => setMessage(null), 5000);
-  };
-
-  const handleImportSuccess = () => {
-    setMessage({ 
-      type: 'success', 
-      text: 'CSV import completed successfully!' 
-    });
-    setTimeout(() => setMessage(null), 8000);
-  };
-
-  const tabs = [
-    { id: 'manual', label: 'Manual Entry', icon: '📝' },
-    { id: 'import', label: 'CSV Import', icon: '📄' },
-    { id: 'recent', label: 'Recent Entries', icon: '🕒' }
-  ] as const;
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Data Entry</h1>
-        
-        {/* Success/Error Messages */}
-        {message && (
-          <div className={`px-4 py-2 rounded-md ${
-            message.type === 'success' 
-              ? 'bg-green-100 text-green-800 border border-green-300' 
-              : 'bg-red-100 text-red-800 border border-red-300'
-          }`}>
-            {message.text}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50">
+      <div className="space-y-8 p-6 w-full">
+        {/* Enhanced Header with Brand Tabs */}
+        <div className="relative">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-green-600/5 rounded-2xl" />
+          
+          <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl border border-gray-200/50 p-8">
+            <div className="flex justify-between items-start">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-green-500 to-green-600 rounded-lg">
+                    <FileTextIcon className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                      Data Entry
+                    </h1>
+                    <p className="text-gray-600 mt-1 flex items-center gap-2">
+                      <ActivityIcon className="h-4 w-4" />
+                      Multi-brand data management and analytics input
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Brand Tabs */}
+              <BrandTabs 
+                activeBrand={activeBrand} 
+                onChange={handleBrandChange}
+                className="mt-2"
+              />
+            </div>
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Tab Navigation */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <span className="mr-2">{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      {/* Tab Content */}
-      <div className="mt-6">
-        {activeTab === 'manual' && (
-          <WeeklyDataForm 
-            onSuccess={handleFormSuccess}
-            onError={handleFormError}
-          />
-        )}
-
-        {activeTab === 'import' && (
-          <CSVImportForm 
-            onSuccess={handleImportSuccess}
-          />
-        )}
-
-        {activeTab === 'recent' && (
-          <RecentEntriesTable />
+        {/* Brand-Specific Content */}
+        {activeBrand === 'kilwins' ? (
+          <KilwinsDataEntryContent />
+        ) : (
+          <RenojaDataEntryContent />
         )}
       </div>
     </div>

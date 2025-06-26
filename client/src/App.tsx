@@ -36,22 +36,7 @@ function App() {
                 </ProtectedRoute>
               }
             >
-            {/* Default to Kilwins dashboard */}
             <Route index element={<Dashboard />} />
-            
-            {/* Kilwins routes */}
-            <Route path="kilwins">
-              <Route index element={<Dashboard />} />
-              <Route path="data-entry" element={<DataEntry />} />
-            </Route>
-            
-            {/* Renoja routes */}
-            <Route path="renoja">
-              <Route index element={<RenojaDashboard />} />
-              <Route path="data-entry" element={<RenojaDataEntry />} />
-            </Route>
-            
-            {/* Shared routes */}
             <Route path="stores" element={<div>Stores Page</div>} />
             <Route path="analytics" element={<div>Analytics Page</div>} />
             <Route path="reports" element={<div>Reports Page</div>} />
@@ -59,8 +44,6 @@ function App() {
             <Route path="forecasts" element={<div>Forecasts Page</div>} />
             <Route path="schedule" element={<div>Schedule Page</div>} />
             <Route path="settings" element={<div>Settings Page</div>} />
-            
-            {/* Legacy data entry route - redirect to Kilwins */}
             <Route path="data-entry" element={<DataEntry />} />
           </Route>
         </Routes>
