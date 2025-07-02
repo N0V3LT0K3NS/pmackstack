@@ -44,8 +44,9 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    version: '2025-07-02-v4', // Update version
-    corsTest: true
+    version: '2025-07-02-v5-FORCE-REBUILD', // Force rebuild
+    corsTest: true,
+    env: config.nodeEnv
   });
 });
 
