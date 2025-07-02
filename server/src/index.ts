@@ -39,16 +39,16 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Health check endpoint
+// Health check endpoint (before auth middleware)
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    version: '2025-07-02-v2' // Add version to verify deployment
+    version: '2025-07-02-v3' // Update version
   });
 });
 
-// API Routes
+// API Routes (protected by auth middleware in routes/index.ts)
 app.use('/api', routes);
 
 // Error handling
