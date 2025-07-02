@@ -1,0 +1,251 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.dataEntryController = void 0;
+const express_validator_1 = require("express-validator");
+const dataEntryService_1 = require("../services/dataEntryService");
+exports.dataEntryController = {
+    // Validation middleware for manual entry
+    validateWeeklyEntry: [
+        (0, express_validator_1.body)('storeCode').notEmpty().withMessage('Store code is required'),
+        (0, express_validator_1.body)('fiscalYear').optional().isInt({ min: 2020, max: 2030 }).withMessage('Valid fiscal year required'),
+        (0, express_validator_1.body)('weekNumber').optional().isInt({ min: 1, max: 53 }).withMessage('Week number must be 1-53'),
+        (0, express_validator_1.body)('weekEnding').optional().isDate().withMessage('Valid week ending date required'),
+        (0, express_validator_1.body)('totalSales').isFloat({ min: 0 }).withMessage('Total sales must be positive'),
+        (0, express_validator_1.body)('variableHours').isFloat({ min: 0 }).withMessage('Variable hours must be positive'),
+        (0, express_validator_1.body)('numTransactions').isInt({ min: 0 }).withMessage('Transactions must be positive'),
+        (0, express_validator_1.body)('averageWage').isFloat({ min: 0 }).withMessage('Average wage must be positive'),
+        (0, express_validator_1.body)('totalFixedCost').optional().isFloat({ min: 0 }).withMessage('Fixed cost must be positive'),
+    ],
+    async submitWeeklyEntry(req, res, next) {
+        try {
+            const user = req.user;
+            // Check validation errors
+            const errors = (0, express_validator_1.validationResult)(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).json({
+                    success: false,
+                    errors: errors.array()
+                });
+            }
+            // Check if user has write access to this store
+            const { storeCode } = req.body;
+            if (user.role === 'manager' && user.stores && !user.stores.includes(storeCode)) {
+                return res.status(403).json({
+                    success: false,
+                    error: 'Access denied to this store'
+                });
+            }
+            // Handle week ending date if provided
+            let fiscalYear;
+            let weekNumber;
+            let weekEnding;
+            if (req.body.weekEnding) {
+                weekEnding = req.body.weekEnding;
+                const weekEndDate = new Date(weekEnding);
+                fiscalYear = weekEndDate.getFullYear();
+                // Calculate week number (simple approximation)
+                const startOfYear = new Date(fiscalYear, 0, 1);
+                const daysSinceStart = Math.floor((weekEndDate.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24));
+                weekNumber = Math.ceil((daysSinceStart + 1) / 7);
+            }
+            else {
+                fiscalYear = parseInt(req.body.fiscalYear);
+                weekNumber = parseInt(req.body.weekNumber);
+                // Calculate week ending date from fiscal year and week number
+                const startOfYear = new Date(fiscalYear, 0, 1);
+                const daysToAdd = (weekNumber - 1) * 7 + 6; // End of week
+                const weekEndDate = new Date(startOfYear);
+                weekEndDate.setDate(startOfYear.getDate() + daysToAdd);
+                weekEnding = weekEndDate.toISOString().split('T')[0];
+            }
+            const entryData = {
+                storeCode: req.body.storeCode,
+                fiscalYear,
+                weekNumber,
+                weekEnding,
+                totalSales: parseFloat(req.body.totalSales),
+                variableHours: parseFloat(req.body.variableHours),
+                numTransactions: parseInt(req.body.numTransactions),
+                averageWage: parseFloat(req.body.averageWage),
+                totalFixedCost: req.body.totalFixedCost ? parseFloat(req.body.totalFixedCost) : undefined,
+                notes: req.body.notes || null
+            };
+            const result = await dataEntryService_1.dataEntryService.submitWeeklyEntry(entryData, user.id);
+            res.json({
+                success: true,
+                data: result
+            });
+        }
+        catch (error) {
+            if (error.message.includes('duplicate key') || error.message.includes('already exists')) {
+                return res.status(409).json({
+                    success: false,
+                    error: 'Entry for this store and week already exists'
+                });
+            }
+            next(error);
+        }
+    },
+    async importCSV(req, res, next) {
+        try {
+            const user = req.user;
+            const { data } = req.body; // Array of CSV rows
+            if (!Array.isArray(data) || data.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'No data provided'
+                });
+            }
+            // Filter data to only stores the user has access to
+            let filteredData = data;
+            if (user.role === 'manager' && user.stores) {
+                filteredData = data.filter(row => user.stores.includes(row.storeCode));
+            }
+            const result = await dataEntryService_1.dataEntryService.importCSVData(filteredData, user.id);
+            res.json({
+                success: true,
+                data: result
+            });
+        }
+        catch (error) {
+            next(error);
+        }
+    },
+    async getCSVTemplate(req, res, next) {
+        try {
+            const template = dataEntryService_1.dataEntryService.getCSVTemplate();
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', 'attachment; filename="weekly_data_template.csv"');
+            res.send(template);
+        }
+        catch (error) {
+            next(error);
+        }
+    },
+    async getRecentEntries(req, res, next) {
+        try {
+            const user = req.user;
+            const limit = parseInt(req.query.limit) || 10;
+            let storeFilter;
+            if (user.role === 'manager' && user.stores) {
+                storeFilter = user.stores;
+            }
+            const result = await dataEntryService_1.dataEntryService.getRecentEntries(limit, storeFilter);
+            res.json({
+                success: true,
+                data: result.entries,
+                meta: {
+                    totalCount: result.totalCount,
+                    showing: result.showing,
+                    limit: limit
+                }
+            });
+        }
+        catch (error) {
+            next(error);
+        }
+    },
+    async getLastWeekData(req, res, next) {
+        try {
+            const user = req.user;
+            const { storeCode } = req.params;
+            // Check if user has access to this store
+            if (user.role === 'manager' && user.stores && !user.stores.includes(storeCode)) {
+                return res.status(403).json({
+                    success: false,
+                    error: 'Access denied to this store'
+                });
+            }
+            const lastWeekData = await dataEntryService_1.dataEntryService.getLastWeekData(storeCode);
+            res.json({
+                success: true,
+                data: lastWeekData
+            });
+        }
+        catch (error) {
+            next(error);
+        }
+    },
+    async updateWeeklyEntry(req, res, next) {
+        try {
+            const user = req.user;
+            const { id } = req.params;
+            // Check validation errors
+            const errors = (0, express_validator_1.validationResult)(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).json({
+                    success: false,
+                    errors: errors.array()
+                });
+            }
+            // Check if user has write access to this store
+            const { storeCode } = req.body;
+            if (user.role === 'manager' && user.stores && !user.stores.includes(storeCode)) {
+                return res.status(403).json({
+                    success: false,
+                    error: 'Access denied to this store'
+                });
+            }
+            const entryData = {
+                id: parseInt(id),
+                storeCode: req.body.storeCode,
+                totalSales: parseFloat(req.body.totalSales),
+                variableHours: parseFloat(req.body.variableHours),
+                numTransactions: parseInt(req.body.numTransactions),
+                averageWage: parseFloat(req.body.averageWage),
+                totalFixedCost: req.body.totalFixedCost ? parseFloat(req.body.totalFixedCost) : undefined,
+                notes: req.body.notes || null
+            };
+            const result = await dataEntryService_1.dataEntryService.updateWeeklyEntry(entryData, user.id);
+            res.json({
+                success: true,
+                data: result
+            });
+        }
+        catch (error) {
+            if (error.message.includes('not found')) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Entry not found'
+                });
+            }
+            next(error);
+        }
+    },
+    async deleteWeeklyEntry(req, res, next) {
+        try {
+            const user = req.user;
+            const { id } = req.params;
+            // Get the entry first to check permissions
+            const entry = await dataEntryService_1.dataEntryService.getWeeklyEntryById(parseInt(id));
+            if (!entry) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Entry not found'
+                });
+            }
+            // Check if user has write access to this store
+            if (user.role === 'manager' && user.stores && !user.stores.includes(entry.store_code)) {
+                return res.status(403).json({
+                    success: false,
+                    error: 'Access denied to this store'
+                });
+            }
+            await dataEntryService_1.dataEntryService.deleteWeeklyEntry(parseInt(id));
+            res.json({
+                success: true,
+                message: 'Entry deleted successfully'
+            });
+        }
+        catch (error) {
+            if (error.message.includes('not found')) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Entry not found'
+                });
+            }
+            next(error);
+        }
+    }
+};
+//# sourceMappingURL=dataEntryController.js.map
