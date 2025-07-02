@@ -44,28 +44,26 @@ export const renojaService = {
     storeFilter?: string[],
     startDate?: string,
     endDate?: string
-  ): Promise<RenojaDashboardSummary> {
+  ): Promise<any> {
     
     // Default to last 4 weeks if no date range specified
     const end = endDate || new Date().toISOString().split('T')[0];
     const start = startDate || new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     
     let query = `
-      WITH period_data AS (
-        SELECT 
-          store_code,
-          SUM(new_members_signed) as total_new_members,
-          SUM(members_lost) as total_members_lost,
-          AVG(total_paying_members) as avg_total_members,
-          MAX(total_paying_members) as current_members,
-          AVG(avg_member_rate) as avg_rate,
-          SUM(digital_posts) as total_posts,
-          SUM(new_google_reviews) as total_new_reviews,
-          SUM(new_partnerships) as total_partnerships,
-          SUM(events_in_studio + events_outside_studio) as total_events,
-          AVG(member_retention_rate) as avg_retention
-        FROM renoja_weekly_metrics
-        WHERE week_ending BETWEEN $1 AND $2
+      SELECT 
+        SUM(new_members_signed) as new_members_total,
+        SUM(members_lost) as members_lost_total,
+        AVG(total_paying_members) as avg_total_members,
+        MAX(total_paying_members) as total_paying_members,
+        AVG(avg_member_rate) as avg_member_rate,
+        SUM(digital_posts) as total_digital_posts,
+        SUM(new_google_reviews) as total_google_reviews,
+        SUM(new_partnerships) as total_partnerships,
+        SUM(events_in_studio + events_outside_studio) as total_events,
+        AVG(member_retention_rate) as retention_rate
+      FROM renoja_weekly_metrics
+      WHERE week_ending BETWEEN $1 AND $2
     `;
     
     const params: any[] = [start, end];
@@ -75,41 +73,19 @@ export const renojaService = {
       params.push(storeFilter);
     }
     
-    query += `
-        GROUP BY store_code
-      ),
-      aggregated AS (
-        SELECT 
-          SUM(total_new_members) as new_members,
-          SUM(total_members_lost) as lost_members,
-          SUM(current_members) as total_active_members,
-          AVG(avg_rate) as avg_member_value,
-          SUM(total_posts + total_new_reviews) as digital_engagement,
-          SUM(total_events) as event_activity,
-          SUM(total_partnerships) as partnership_growth,
-          AVG(avg_retention) as retention_rate
-        FROM period_data
-      )
-      SELECT * FROM aggregated
-    `;
-    
     const result = await pool.query(query, params);
     const data = result.rows[0];
     
-    // Calculate growth trends (would need previous period data for real trends)
-    // For now, returning mock trend data
     return {
-      totalActiveMembers: parseInt(data.total_active_members) || 0,
-      netMemberGrowth: (parseInt(data.new_members) || 0) - (parseInt(data.lost_members) || 0),
-      memberRetentionRate: parseFloat(data.retention_rate) || 0,
-      avgMemberValue: parseFloat(data.avg_member_value) || 0,
-      digitalEngagement: parseInt(data.digital_engagement) || 0,
-      eventActivity: parseInt(data.event_activity) || 0,
-      partnershipGrowth: parseInt(data.partnership_growth) || 0,
-      reviewRating: undefined, // TODO: Calculate from review data
-      memberGrowthTrend: 5.2, // Mock data
-      engagementTrend: 8.7, // Mock data  
-      revenueTrend: 3.4 // Mock data
+      newMembersTotal: parseInt(data.new_members_total) || 0,
+      totalPayingMembers: parseInt(data.total_paying_members) || 0,
+      membersLostTotal: parseInt(data.members_lost_total) || 0,
+      avgMemberRate: parseFloat(data.avg_member_rate) || 0,
+      retentionRate: parseFloat(data.retention_rate) || 0,
+      totalEvents: parseInt(data.total_events) || 0,
+      totalDigitalPosts: parseInt(data.total_digital_posts) || 0,
+      totalGoogleReviews: parseInt(data.total_google_reviews) || 0,
+      totalPartnerships: parseInt(data.total_partnerships) || 0,
     };
   },
 
@@ -135,7 +111,9 @@ export const renojaService = {
         new_google_reviews,
         total_events,
         new_partnerships,
-        member_retention_rate
+        member_retention_rate as retention_rate,
+        (events_in_studio + events_outside_studio) as events,
+        new_partnerships as partnerships
       FROM renoja_weekly_metrics
       WHERE week_ending BETWEEN $1 AND $2
     `;

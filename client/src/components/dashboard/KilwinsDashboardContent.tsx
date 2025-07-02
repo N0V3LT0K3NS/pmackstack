@@ -79,7 +79,7 @@ export function KilwinsDashboardContent() {
   const [exportLoading, setExportLoading] = useState(false);
 
   const { data: dashboardData, isLoading: isDashboardLoading, error } = useDashboard(filters);
-  const { data: storesData, isLoading: isStoresLoading } = useStores();
+  const { data: storesData, isLoading: isStoresLoading } = useStores('Kilwins');
   const { data: storeTimeSeriesData, isLoading: isStoreTimeSeriesLoading } = useStoreTimeSeries(
     filters.startDate,
     filters.endDate,

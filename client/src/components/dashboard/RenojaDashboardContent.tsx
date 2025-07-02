@@ -5,8 +5,22 @@ import { Card } from '@/components/ui/card';
 import { SimpleStoreFilter } from '@/components/filters/SimpleStoreFilter';
 import { SimpleDateFilter } from '@/components/filters/SimpleDateFilter';
 import { useStores } from '@/hooks/useStores';
-import api from '@/lib/api';
+import { renojaApi } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell
+} from 'recharts';
 
 interface RenojaMetrics {
   summary: {
@@ -77,18 +91,17 @@ export function RenojaDashboardContent() {
   const [selectedStore, setSelectedStore] = useState<string>('all');
   const [dateRange, setDateRange] = useState({ from: 30, to: 0 });
 
-  const { data: stores } = useStores('RENOJA');
+  const { data: stores } = useStores('Renoja');
 
   const { data: metrics, isLoading, error } = useQuery<RenojaMetrics>({
     queryKey: ['renoja-dashboard', selectedStore, dateRange],
     queryFn: async () => {
-      const params = new URLSearchParams({
+      const response = await renojaApi.getDashboard({
         store: selectedStore,
-        daysFrom: dateRange.from.toString(),
-        daysTo: dateRange.to.toString(),
+        daysFrom: dateRange.from,
+        daysTo: dateRange.to,
       });
-      const response = await api.get(`/api/renoja/dashboard?${params}`);
-      return response.data;
+      return response;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -220,7 +233,7 @@ export function RenojaDashboardContent() {
         </div>
       </div>
 
-      {/* Member Trends Chart Placeholder */}
+      {/* Member Trends Chart */}
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <Users className="h-5 w-5 text-gray-600" />
@@ -228,12 +241,49 @@ export function RenojaDashboardContent() {
         </div>
         
         <Card className="p-6 bg-gradient-to-br from-white to-green-50/20 border-green-100">
-          <div className="h-64 flex items-center justify-center text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
-            <div className="text-center">
-              <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-lg font-medium">Member Growth Chart</p>
-              <p className="text-sm text-gray-400 mt-1">Chart implementation coming soon</p>
-            </div>
+          <div className="h-64">
+            {metrics?.timeSeries && metrics.timeSeries.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={metrics.timeSeries.slice(-8)} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" opacity={0.5} />
+                  <XAxis 
+                    dataKey="week_ending" 
+                    tick={{ fontSize: 11 }}
+                    tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip 
+                    labelFormatter={(value) => new Date(value).toLocaleDateString()}
+                    formatter={(value: any, name: string) => [
+                      name === 'total_paying_members' ? value : `+${value}`,
+                      name === 'total_paying_members' ? 'Total Members' : 'New Members'
+                    ]}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="total_paying_members" 
+                    stroke="#16a34a" 
+                    strokeWidth={3}
+                    dot={{ r: 4, fill: '#16a34a' }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="new_members_signed" 
+                    stroke="#3b82f6" 
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: '#3b82f6' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
+                <div className="text-center">
+                  <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-lg font-medium">No Data Available</p>
+                  <p className="text-sm text-gray-400 mt-1">Member trends will appear here once data is available</p>
+                </div>
+              </div>
+            )}
           </div>
         </Card>
       </div>
@@ -247,12 +297,44 @@ export function RenojaDashboardContent() {
           </div>
           
           <Card className="p-6 bg-gradient-to-br from-white to-blue-50/20 border-blue-100">
-            <div className="h-64 flex items-center justify-center text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
-              <div className="text-center">
-                <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-lg font-medium">Engagement Activities</p>
-                <p className="text-sm text-gray-400 mt-1">Posts, Reviews, Partnerships, Events</p>
-              </div>
+            <div className="h-64">
+              {metrics?.timeSeries && metrics.timeSeries.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={metrics.timeSeries.slice(-6)} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" opacity={0.5} />
+                    <XAxis 
+                      dataKey="week_ending"
+                      tick={{ fontSize: 11 }}
+                      tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip 
+                      labelFormatter={(value) => new Date(value).toLocaleDateString()}
+                      formatter={(value: any, name: string) => {
+                        const labels: { [key: string]: string } = {
+                          'digital_posts': 'Digital Posts',
+                          'new_google_reviews': 'Google Reviews',
+                          'partnerships': 'Partnerships',
+                          'events': 'Events'
+                        };
+                        return [value, labels[name] || name];
+                      }}
+                    />
+                    <Bar dataKey="digital_posts" fill="#3b82f6" name="digital_posts" />
+                    <Bar dataKey="new_google_reviews" fill="#10b981" name="new_google_reviews" />
+                    <Bar dataKey="partnerships" fill="#f59e0b" name="partnerships" />
+                    <Bar dataKey="events" fill="#8b5cf6" name="events" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
+                  <div className="text-center">
+                    <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-lg font-medium">No Data Available</p>
+                    <p className="text-sm text-gray-400 mt-1">Engagement data will appear here once available</p>
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
         </div>
@@ -264,12 +346,43 @@ export function RenojaDashboardContent() {
           </div>
           
           <Card className="p-6 bg-gradient-to-br from-white to-purple-50/20 border-purple-100">
-            <div className="h-64 flex items-center justify-center text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
-              <div className="text-center">
-                <TrendingUp className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-lg font-medium">Retention Trends</p>
-                <p className="text-sm text-gray-400 mt-1">Member retention rate over time</p>
-              </div>
+            <div className="h-64">
+              {metrics?.timeSeries && metrics.timeSeries.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={metrics.timeSeries.slice(-8)} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" opacity={0.5} />
+                    <XAxis 
+                      dataKey="week_ending"
+                      tick={{ fontSize: 11 }}
+                      tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 11 }}
+                      domain={[0, 100]}
+                      tickFormatter={(value) => `${value}%`}
+                    />
+                    <Tooltip 
+                      labelFormatter={(value) => new Date(value).toLocaleDateString()}
+                      formatter={(value: any) => [`${parseFloat(value).toFixed(1)}%`, 'Retention Rate']}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="retention_rate" 
+                      stroke="#8b5cf6" 
+                      strokeWidth={3}
+                      dot={{ r: 4, fill: '#8b5cf6' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
+                  <div className="text-center">
+                    <TrendingUp className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-lg font-medium">No Data Available</p>
+                    <p className="text-sm text-gray-400 mt-1">Retention data will appear here once available</p>
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
         </div>

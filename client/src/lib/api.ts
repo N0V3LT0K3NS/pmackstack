@@ -108,6 +108,35 @@ export const storeApi = {
   },
 };
 
+// Renoja endpoints
+export const renojaApi = {
+  getDashboard: async (filters?: { store?: string; daysFrom?: number; daysTo?: number }) => {
+    const params = new URLSearchParams();
+    if (filters?.store && filters.store !== 'all') params.append('store', filters.store);
+    if (filters?.daysFrom) params.append('daysFrom', filters.daysFrom.toString());
+    if (filters?.daysTo) params.append('daysTo', filters.daysTo.toString());
+    
+    const response = await api.get<ApiResponse<any>>(`/renoja/dashboard?${params.toString()}`);
+    return response.data.data!;
+  },
 
+  getRecentEntries: async (limit?: number) => {
+    const params = new URLSearchParams();
+    if (limit) params.append('limit', limit.toString());
+    
+    const response = await api.get<ApiResponse<any>>(`/renoja/recent?${params.toString()}`);
+    return response.data.data!;
+  },
+
+  getLastWeekData: async (storeCode: string) => {
+    const response = await api.get<ApiResponse<any>>(`/renoja/last-week/${storeCode}`);
+    return response.data.data!;
+  },
+
+  submitWeeklyEntry: async (data: any) => {
+    const response = await api.post<ApiResponse<any>>('/renoja/weekly', data);
+    return response.data.data!;
+  }
+};
 
 export default api; 

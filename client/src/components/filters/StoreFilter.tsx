@@ -27,7 +27,7 @@ const storeInfo: Record<string, StoreInfo> = {
 };
 
 export function StoreFilter({ selectedStores, onStoreChange }: StoreFilterProps) {
-  const { data: storesData, isLoading } = useStores();
+  const { data: storesData, isLoading } = useStores('Kilwins');
   
   const stores = storesData?.stores || [];
   
