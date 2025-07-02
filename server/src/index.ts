@@ -40,12 +40,18 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Health check endpoint (before auth middleware)
-app.get('/api/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    version: '2025-07-02-v3' // Update version
+    version: '2025-07-02-v4', // Update version
+    corsTest: true
   });
+});
+
+// Test CORS endpoint
+app.options('/test-cors', (req, res) => {
+  res.status(200).end();
 });
 
 // API Routes (protected by auth middleware in routes/index.ts)
@@ -81,6 +87,6 @@ const startServer = async () => {
     console.error('Failed to start server:', error);
     process.exit(1);
   }
-};
-
+  };
+  
 startServer(); 
