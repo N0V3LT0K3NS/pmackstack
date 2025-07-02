@@ -1,7 +1,5 @@
 import { Pool } from '@neondatabase/serverless';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { config } from './env';
 
 // Fallback to known working database URL if not set
 const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_rtjyKc0hWJ1o@ep-steep-moon-a8q2x8sg-pooler.eastus2.azure.neon.tech/neondb?sslmode=require';
@@ -11,7 +9,7 @@ if (!DATABASE_URL) {
 }
 
 export const pool = new Pool({
-  connectionString: DATABASE_URL,
+  connectionString: config.databaseUrl,
   ssl: { rejectUnauthorized: false }
 });
 
