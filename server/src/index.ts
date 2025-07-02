@@ -7,42 +7,27 @@ import routes from './routes';
 
 const app = express();
 
-// CORS configuration with dynamic origin checking
-const corsOptions: cors.CorsOptions = {
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) {
-      return callback(null, true);
-    }
-    
-    // List of allowed origins
-    const allowedOrigins = [
-      config.clientUrl,
-      'http://localhost:5174',
-      'http://localhost:5175',
-      'https://pmackstack.vercel.app'
-    ];
-    
-    // Check exact matches
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    
-    // Check wildcard for Vercel preview deployments
-    if (origin.match(/^https:\/\/pmackstack-.*\.vercel\.app$/)) {
-      return callback(null, true);
-    }
-    
-    // Reject other origins
-    callback(new Error('Not allowed by CORS'));
-  },
+// Simplified CORS configuration
+const allowedOrigins = [
+  'https://pmackstack.vercel.app',
+  'http://localhost:5174',
+  'http://localhost:5175'
+];
+
+// Add CLIENT_URL if it's set and not already in the list
+if (config.clientUrl && !allowedOrigins.includes(config.clientUrl)) {
+  allowedOrigins.push(config.clientUrl);
+}
+
+app.use(cors({
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-};
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
+}));
 
 // Middleware
-app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -58,23 +43,27 @@ app.use('/api', routes);
 app.use(errorHandler);
 
 // Start server
-async function startServer() {
+const startServer = async () => {
   try {
     // Test database connection
-    const dbConnected = await testConnection();
-    if (!dbConnected) {
-      throw new Error('Failed to connect to database');
-    }
-
+    await testConnection();
+    console.log('Database connection successful');
+    
+    // Log CORS configuration
+    console.log('CORS Configuration:', {
+      clientUrl: config.clientUrl,
+      nodeEnv: config.nodeEnv,
+      allowedOrigins: allowedOrigins
+    });
+    
+    // Start server
     app.listen(config.port, () => {
-      console.log(`🚀 Server running on http://localhost:${config.port}`);
-      console.log(`📊 Environment: ${config.nodeEnv}`);
-      console.log(`🌐 CORS enabled for: ${config.clientUrl}`);
+      console.log(`Server is running on port ${config.port}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
   }
-}
+};
 
 startServer(); 
