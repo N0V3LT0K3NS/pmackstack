@@ -7,19 +7,42 @@ import routes from './routes';
 
 const app = express();
 
-// Middleware
-app.use(cors({
-  origin: [
-    config.clientUrl, 
-    'http://localhost:5174',
-    'http://localhost:5175',
-    'https://pmackstack.vercel.app',
-    'https://pmackstack-*.vercel.app'
-  ],
+// CORS configuration with dynamic origin checking
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // List of allowed origins
+    const allowedOrigins = [
+      config.clientUrl,
+      'http://localhost:5174',
+      'http://localhost:5175',
+      'https://pmackstack.vercel.app'
+    ];
+    
+    // Check exact matches
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // Check wildcard for Vercel preview deployments
+    if (origin.match(/^https:\/\/pmackstack-.*\.vercel\.app$/)) {
+      return callback(null, true);
+    }
+    
+    // Reject other origins
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
-}));
+};
+
+// Middleware
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
