@@ -1,5 +1,19 @@
 {
+  "name": "pmackstack",
+  "version": "1.0.0",
+  "description": "Full-stack executive dashboard",
+  "scripts": {
+    "build": "cd server && npm ci && npm run build",
+    "start": "cd server && node dist/index.js",
+    "dev": "npm run dev:server",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "dependencies": {
-    "node-fetch": "^2.7.0"
+    "node-fetch": "^3.3.2"
   }
 }
