@@ -1,5 +1,4 @@
 import express from 'express';
-import cors from 'cors';
 import { config } from './config/env';
 import { testConnection } from './config/database';
 import { errorHandler } from './middleware/errorHandler';
@@ -16,6 +15,11 @@ app.use((req, res, next) => {
     'http://localhost:5175'
   ];
   
+  // Add CLIENT_URL if set
+  if (config.clientUrl && !allowedOrigins.includes(config.clientUrl)) {
+    allowedOrigins.push(config.clientUrl);
+  }
+  
   if (origin && allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
@@ -25,31 +29,11 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   
   if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
+    return res.status(200).end();
   }
   
   next();
 });
-
-// CORS package as backup
-const allowedOrigins = [
-  'https://pmackstack.vercel.app',
-  'http://localhost:5174',
-  'http://localhost:5175'
-];
-
-// Add CLIENT_URL if it's set and not already in the list
-if (config.clientUrl && !allowedOrigins.includes(config.clientUrl)) {
-  allowedOrigins.push(config.clientUrl);
-}
-
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
-}));
 
 // Middleware
 app.use(express.json());
@@ -77,7 +61,12 @@ const startServer = async () => {
     console.log('CORS Configuration:', {
       clientUrl: config.clientUrl,
       nodeEnv: config.nodeEnv,
-      allowedOrigins: allowedOrigins
+      allowedOrigins: [
+        'https://pmackstack.vercel.app',
+        'http://localhost:5174',
+        'http://localhost:5175',
+        config.clientUrl
+      ].filter(Boolean)
     });
     
     // Start server
