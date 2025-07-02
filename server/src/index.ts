@@ -7,7 +7,31 @@ import routes from './routes';
 
 const app = express();
 
-// Simplified CORS configuration
+// Manual CORS headers middleware
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'https://pmackstack.vercel.app',
+    'http://localhost:5174',
+    'http://localhost:5175'
+  ];
+  
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  
+  next();
+});
+
+// CORS package as backup
 const allowedOrigins = [
   'https://pmackstack.vercel.app',
   'http://localhost:5174',
