@@ -6,8 +6,12 @@ import type {
 } from '@shared/types/api';
 import type { DashboardFilters } from '@shared/types/models';
 
-// Use environment variable for API URL, fallback to localhost
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002';
+// Use environment variable for API URL, ensure it includes https://
+const API_BASE_URL = import.meta.env.VITE_API_URL 
+  ? (import.meta.env.VITE_API_URL.startsWith('http') 
+      ? import.meta.env.VITE_API_URL 
+      : `https://${import.meta.env.VITE_API_URL}`)
+  : 'http://localhost:3002';
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api`,

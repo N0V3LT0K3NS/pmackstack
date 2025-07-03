@@ -269,3 +269,19 @@ pmackstack/
 ## License
 
 Private - Life Giving Business
+
+
+Demo Accounts:
+Executive Access:
+Email: patrick@lifegivingbusiness.com
+Password: LGB2024!Exec
+Bookkeeper Access:
+Email: bookkeeper@lifegivingbusiness.com
+Password: LGB2024!Book
+Manager Access (Kilwins):
+Kansas: manager.ks@lifegivingbusiness.com / LGB2024!KS
+Missouri: manager.mo@lifegivingbusiness.com / LGB2024!MO
+Texas: manager.tx@lifegivingbusiness.com / LGB2024!TX
+Manager Access (Renoja):
+Email: manager.renoja@lifegivingbusiness.com
+Password: LGB2024!REN
