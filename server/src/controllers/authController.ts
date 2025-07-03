@@ -24,6 +24,13 @@ export const authController = {
       
       const authResponse = await authService.login(email, password);
       
+      // Add CORS headers directly (temporary fix)
+      const origin = req.headers.origin;
+      if (origin === 'https://pmackstack.vercel.app' || origin?.includes('localhost')) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+      }
+      
       res.json({
         success: true,
         data: authResponse
