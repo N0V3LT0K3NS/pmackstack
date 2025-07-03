@@ -1,11 +1,13 @@
 {
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
+  "version": 2,
+  "builds": [
+    {
+      "src": "dist/index.html",
+      "use": "@vercel/static"
+    }
   ],
   "routes": [
-    { "handle": "filesystem" },
-    { "src": "/api/.*", "dest": "https://pmackstack-production-0f8a.up.railway.app/api/$1" },
-    { "src": "/.*", "dest": "/index.html" }
+    { "src": "/api/(.*)", "dest": "https://pmackstack-production-0f8a.up.railway.app/api/$1" },
+    { "src": "^/(.*)", "dest": "/index.html" }
   ]
 }
