@@ -36,4 +36,3 @@ router.get('/renoja/recent', renojaController_1.renojaController.getRecentEntrie
 router.get('/renoja/last-week/:storeCode', renojaController_1.renojaController.getLastWeekData);
 router.post('/renoja/weekly', renojaController_1.renojaController.validateRenojaEntry, renojaController_1.renojaController.submitWeeklyEntry);
 exports.default = router;
-//# sourceMappingURL=index.js.map

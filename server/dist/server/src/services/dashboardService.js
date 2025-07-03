@@ -386,4 +386,3 @@ exports.dashboardService = {
         return result.rows;
     }
 };
-//# sourceMappingURL=dashboardService.js.map

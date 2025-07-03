@@ -49,4 +49,3 @@ function authorize(...allowedRoles) {
         next();
     };
 }
-//# sourceMappingURL=auth.js.map

@@ -21,6 +21,12 @@ exports.authController = {
             }
             const { email, password } = req.body;
             const authResponse = await authService_1.authService.login(email, password);
+            // Add CORS headers directly (temporary fix)
+            const origin = req.headers.origin;
+            if (origin === 'https://pmackstack.vercel.app' || origin?.includes('localhost')) {
+                res.setHeader('Access-Control-Allow-Origin', origin);
+                res.setHeader('Access-Control-Allow-Credentials', 'true');
+            }
             res.json({
                 success: true,
                 data: authResponse
@@ -72,4 +78,3 @@ exports.authController = {
         }
     }
 };
-//# sourceMappingURL=authController.js.map
