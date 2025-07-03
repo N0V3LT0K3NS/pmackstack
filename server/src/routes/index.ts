@@ -4,6 +4,7 @@ import { storesController } from '../controllers/storesController';
 import { authController } from '../controllers/authController';
 import { dataEntryController } from '../controllers/dataEntryController';
 import { renojaController } from '../controllers/renojaController';
+import { userController } from '../controllers/userController';
 import { authenticate, authorize } from '../middleware/auth';
 
 const router = Router();
@@ -16,6 +17,12 @@ router.use(authenticate); // All routes below this require authentication
 
 // Auth routes
 router.get('/auth/me', authController.me);
+
+// User management routes (executive only)
+router.get('/users', authorize('executive'), userController.getUsers);
+router.post('/users', authorize('executive'), userController.validateCreateUser, userController.createUser);
+router.put('/users/:id', authorize('executive'), userController.validateUpdateUser, userController.updateUser);
+router.delete('/users/:id', authorize('executive'), userController.deleteUser);
 
 // Dashboard routes - all authenticated users can access
 router.get('/dashboard/overview', dashboardController.getOverview);
