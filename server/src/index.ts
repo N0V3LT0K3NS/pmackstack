@@ -1,4 +1,5 @@
 import express from 'express';
+// Using standard imports with relative paths
 import { config } from './config/env';
 import { testConnection, closePool } from './config/database';
 import { errorHandler } from './middleware/errorHandler';
