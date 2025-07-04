@@ -4,8 +4,8 @@ import {
   DashboardSummary,
   StorePerformance,
   TimeSeriesDataPoint
-} from '../../../shared/types/models';
-import { DashboardOverviewResponse } from '../../../shared/types/api';
+} from '@shared/types/models';
+import { DashboardOverviewResponse } from '@shared/types/api';
 import { format } from 'date-fns';
 
 // Helper function to get week number from date

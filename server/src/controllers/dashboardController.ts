@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { dashboardService } from '../services/dashboardService';
-import { DashboardFilters } from '../../../shared/types/models';
+import { DashboardFilters } from '@shared/types/models';
 
 export const dashboardController = {
   async getOverview(req: AuthRequest, res: Response, next: NextFunction) {
