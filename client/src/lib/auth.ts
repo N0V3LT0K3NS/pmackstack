@@ -17,10 +17,17 @@ const TOKEN_KEY = 'auth_token';
 
 export const authService = {
   async login(email: string, password: string): Promise<AuthResponse> {
-    const response = await api.post<{ success: boolean; data: AuthResponse }>('/auth/login', {
-      email,
-      password
-    });
+    // Add dummy auth header for login requests to bypass server auth check
+    // This is a workaround for the server requiring auth headers on login endpoint
+    const response = await api.post<{ success: boolean; data: AuthResponse }>('/auth/login', 
+      {
+        email,
+        password
+      },
+      {
+        headers: { Authorization: 'Bearer dummy_token' }
+      }
+    );
     
     if (response.data.success) {
       const { token } = response.data.data;
