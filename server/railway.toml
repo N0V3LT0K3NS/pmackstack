@@ -1,11 +1,11 @@
 [build]
 # Commands to run during the build phase
 builder = "NIXPACKS"
-buildCommand = "npm run build"
+buildCommand = "cd server && npm run build"
 
 [deploy]
 # Commands to run during the deploy phase
-startCommand = "node railway.js"
+startCommand = "cd server && node railway.js"
 healthcheckPath = "/health"
 healthcheckTimeout = 30 # seconds
 restartPolicy = "on-failure"
