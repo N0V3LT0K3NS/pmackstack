@@ -5,7 +5,7 @@ buildCommand = "npm run build"
 
 [deploy]
 # Commands to run during the deploy phase
-startCommand = "node -r tsconfig-paths/register dist/index.js"
+startCommand = "node railway.js"
 healthcheckPath = "/health"
 healthcheckTimeout = 30 # seconds
 restartPolicy = "on-failure"
