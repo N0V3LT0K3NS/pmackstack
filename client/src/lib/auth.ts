@@ -17,27 +17,33 @@ const TOKEN_KEY = 'auth_token';
 
 export const authService = {
   async login(email: string, password: string): Promise<AuthResponse> {
-    // Add dummy auth header for login requests to bypass server auth check
-    // This is a workaround for the server requiring auth headers on login endpoint
-    const response = await api.post<{ success: boolean; data: AuthResponse }>('/auth/login', 
-      {
+    // Temporarily store a dummy token in localStorage to force the interceptor to use it
+    // This ensures the Authorization header is included even after interceptors run
+    localStorage.setItem(TOKEN_KEY, 'dummy_token_for_login');
+    
+    try {
+      const response = await api.post<{ success: boolean; data: AuthResponse }>('/auth/login', {
         email,
         password
-      },
-      {
-        headers: { Authorization: 'Bearer dummy_token' }
-      }
-    );
+      });
     
     if (response.data.success) {
       const { token } = response.data.data;
+      // Replace the dummy token with the real token
       localStorage.setItem(TOKEN_KEY, token);
       // Set token in axios default headers
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       return response.data.data;
     }
     
+    // If we got here without success, remove the dummy token
+    localStorage.removeItem(TOKEN_KEY);
     throw new Error('Login failed');
+    } catch (error) {
+      // Always clean up dummy token if there's an error
+      localStorage.removeItem(TOKEN_KEY);
+      throw error;
+    }
   },
   
   logout() {
