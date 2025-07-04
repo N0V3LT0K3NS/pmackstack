@@ -17,7 +17,7 @@ const TOKEN_KEY = 'auth_token';
 
 export const authService = {
   async login(email: string, password: string): Promise<AuthResponse> {
-    const response = await api.post<{ success: boolean; data: AuthResponse }>('/api/auth/login', {
+    const response = await api.post<{ success: boolean; data: AuthResponse }>('/auth/login', {
       email,
       password
     });
@@ -48,7 +48,7 @@ export const authService = {
   },
   
   async getCurrentUser(): Promise<{ user: User; stores?: string[] }> {
-    const response = await api.get<{ success: boolean; data: { user: User; stores?: string[] } }>('/api/auth/me');
+    const response = await api.get<{ success: boolean; data: { user: User; stores?: string[] } }>('/auth/me');
     
     if (response.data.success) {
       return response.data.data;

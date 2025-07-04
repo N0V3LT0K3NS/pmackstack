@@ -1,0 +1,21 @@
+[build]
+# Commands to run during the build phase
+builder = "NIXPACKS"
+buildCommand = "npm run build"
+
+[deploy]
+# Commands to run during the deploy phase
+startCommand = "node -r tsconfig-paths/register dist/index.js"
+healthcheckPath = "/health"
+healthcheckTimeout = 30 # seconds
+restartPolicy = "on-failure"
+
+[service]
+# Internal port that the application listens on
+internalPort = 3002
+
+[scaling]
+# Maximum number of instances to scale to
+maxInstances = 1
+# Minimum number of instances to scale down to
+minInstances = 1

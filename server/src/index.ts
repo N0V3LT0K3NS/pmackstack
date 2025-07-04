@@ -1,6 +1,6 @@
 import express from 'express';
 import { config } from './config/env';
-import { testConnection } from './config/database';
+import { testConnection, closePool } from './config/database';
 import { errorHandler } from './middleware/errorHandler';
 import routes from './routes';
 
@@ -96,15 +96,17 @@ const startServer = async () => {
     setInterval(logMemoryUsage, 5 * 60 * 1000);
     
     // Graceful shutdown
-    process.on('SIGTERM', () => {
+    process.on('SIGTERM', async () => {
       console.log('SIGTERM received, shutting down gracefully');
       logMemoryUsage();
+      await closePool();
       process.exit(0);
     });
     
-    process.on('SIGINT', () => {
+    process.on('SIGINT', async () => {
       console.log('SIGINT received, shutting down gracefully');
       logMemoryUsage();
+      await closePool();
       process.exit(0);
     });
     
