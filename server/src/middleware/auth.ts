@@ -16,6 +16,16 @@ export async function authenticate(
   next: NextFunction
 ) {
   try {
+    // List of public paths that should bypass authentication
+    const publicPaths = ['/auth/login'];
+    
+    // Check if the current path is in the public paths list
+    // Note: req.path doesn't include the base '/api' prefix that's added in the router
+    if (publicPaths.includes(req.path)) {
+      return next();
+    }
+    
+    // For all other paths, require authentication
     const authHeader = req.headers.authorization;
     
     if (!authHeader) {
