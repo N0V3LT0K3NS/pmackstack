@@ -5,6 +5,9 @@ exports.authorize = authorize;
 const authService_1 = require("../services/authService");
 async function authenticate(req, res, next) {
     try {
+        // This middleware is only applied to protected routes
+        // Public routes (like /auth/login) are handled before this middleware
+        console.log(`Auth check for protected route: ${req.originalUrl}`);
         const authHeader = req.headers.authorization;
         if (!authHeader) {
             return res.status(401).json({

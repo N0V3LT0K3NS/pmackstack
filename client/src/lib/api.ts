@@ -20,15 +20,7 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    // Special case for login endpoint - ALWAYS add a dummy token
-    // This fixes an issue where the server requires Authorization header even for login
-    if (config.url === '/auth/login') {
-      console.log('Special handling for login endpoint - adding dummy token');
-      config.headers.Authorization = 'Bearer dummy_token_for_login';
-      return config;
-    }
-    
-    // Normal token handling for all other endpoints
+    // Add auth token to all requests except login
     const token = localStorage.getItem('auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

@@ -10,7 +10,6 @@ import { Login } from '@/pages/Login';
 import { DataEntry } from '@/pages/DataEntry';
 import { RenojaDashboard } from '@/pages/RenojaDashboard';
 import { RenojaDataEntry } from '@/pages/RenojaDataEntry';
-import { ApiTest } from '@/pages/ApiTest';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -29,7 +28,6 @@ function App() {
       <Router>
         <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/api-test" element={<ApiTest />} />
             <Route
               path="/"
               element={
@@ -47,8 +45,6 @@ function App() {
             <Route path="schedule" element={<div>Schedule Page</div>} />
             <Route path="settings" element={<div>Settings Page</div>} />
             <Route path="data-entry" element={<DataEntry />} />
-            <Route path="renoja/dashboard" element={<RenojaDashboard />} />
-            <Route path="renoja/data-entry" element={<RenojaDataEntry />} />
           </Route>
         </Routes>
       </Router>

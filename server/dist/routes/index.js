@@ -9,11 +9,16 @@ const renojaController_1 = require("../controllers/renojaController");
 const userController_1 = require("../controllers/userController");
 const auth_1 = require("../middleware/auth");
 const router = (0, express_1.Router)();
-// Public routes (no auth required)
+// ============================================
+// PUBLIC ROUTES (NO AUTHENTICATION REQUIRED)
+// ============================================
 router.post('/auth/login', authController_1.authController.validateLogin, authController_1.authController.login);
-// Protected routes (auth required)
-router.use(auth_1.authenticate); // All routes below this require authentication
-// Auth routes
+// ============================================
+// PROTECTED ROUTES (AUTHENTICATION REQUIRED)
+// ============================================
+// Apply authentication middleware to all routes below
+router.use(auth_1.authenticate);
+// Auth routes (require authentication)
 router.get('/auth/me', authController_1.authController.me);
 // User management routes (executive only)
 router.get('/users', (0, auth_1.authorize)('executive'), userController_1.userController.getUsers);

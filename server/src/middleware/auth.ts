@@ -16,23 +16,10 @@ export async function authenticate(
   next: NextFunction
 ) {
   try {
-    // List of public paths that should bypass authentication
-    const publicPaths = ['/auth/login'];
+    // This middleware is only applied to protected routes
+    // Public routes (like /auth/login) are handled before this middleware
+    console.log(`Auth check for protected route: ${req.originalUrl}`);
     
-    // For debugging in production
-    console.log(`Auth check for path: ${req.originalUrl} (req.path: ${req.path})`);
-    
-    // More robust path checking that works regardless of how the router is mounted
-    // Checks if the path ends with any of our public paths
-    if (
-      publicPaths.some(publicPath => req.path === publicPath || req.path.endsWith(publicPath)) ||
-      publicPaths.some(publicPath => req.originalUrl === publicPath || req.originalUrl.endsWith(publicPath))
-    ) {
-      console.log(`Bypassing auth for public path: ${req.originalUrl}`);
-      return next();
-    }
-    
-    // For all other paths, require authentication
     const authHeader = req.headers.authorization;
     
     if (!authHeader) {

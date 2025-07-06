@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+// Using standard imports with relative paths
 const env_1 = require("./config/env");
 const database_1 = require("./config/database");
 const errorHandler_1 = require("./middleware/errorHandler");

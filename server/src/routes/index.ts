@@ -9,13 +9,18 @@ import { authenticate, authorize } from '../middleware/auth';
 
 const router = Router();
 
-// Public routes (no auth required)
+// ============================================
+// PUBLIC ROUTES (NO AUTHENTICATION REQUIRED)
+// ============================================
 router.post('/auth/login', authController.validateLogin, authController.login);
 
-// Protected routes (auth required)
-router.use(authenticate); // All routes below this require authentication
+// ============================================
+// PROTECTED ROUTES (AUTHENTICATION REQUIRED)
+// ============================================
+// Apply authentication middleware to all routes below
+router.use(authenticate);
 
-// Auth routes
+// Auth routes (require authentication)
 router.get('/auth/me', authController.me);
 
 // User management routes (executive only)
