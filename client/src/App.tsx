@@ -10,6 +10,7 @@ import { Login } from '@/pages/Login';
 import { DataEntry } from '@/pages/DataEntry';
 import { RenojaDashboard } from '@/pages/RenojaDashboard';
 import { RenojaDataEntry } from '@/pages/RenojaDataEntry';
+import { DebugInfo } from '@/components/DebugInfo';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -25,8 +26,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-      <Router>
-        <Routes>
+        <DebugInfo />
+        <Router>
+          <Routes>
             <Route path="/login" element={<Login />} />
             <Route
               path="/"
@@ -36,18 +38,18 @@ function App() {
                 </ProtectedRoute>
               }
             >
-            <Route index element={<Dashboard />} />
-            <Route path="stores" element={<div>Stores Page</div>} />
-            <Route path="analytics" element={<div>Analytics Page</div>} />
-            <Route path="reports" element={<div>Reports Page</div>} />
-            <Route path="labor" element={<div>Labor Page</div>} />
-            <Route path="forecasts" element={<div>Forecasts Page</div>} />
-            <Route path="schedule" element={<div>Schedule Page</div>} />
-            <Route path="settings" element={<div>Settings Page</div>} />
-            <Route path="data-entry" element={<DataEntry />} />
-          </Route>
-        </Routes>
-      </Router>
+              <Route index element={<Dashboard />} />
+              <Route path="stores" element={<div>Stores Page</div>} />
+              <Route path="analytics" element={<div>Analytics Page</div>} />
+              <Route path="reports" element={<div>Reports Page</div>} />
+              <Route path="labor" element={<div>Labor Page</div>} />
+              <Route path="forecasts" element={<div>Forecasts Page</div>} />
+              <Route path="schedule" element={<div>Schedule Page</div>} />
+              <Route path="settings" element={<div>Settings Page</div>} />
+              <Route path="data-entry" element={<DataEntry />} />
+            </Route>
+          </Routes>
+        </Router>
       </AuthProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>

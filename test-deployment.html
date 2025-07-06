@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deployment Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+        .pending { color: orange; }
+    </style>
+</head>
+<body>
+    <h1>Deployment Test</h1>
+    
+    <div class="test-section">
+        <h2>API Health Check</h2>
+        <div id="health-status" class="pending">Testing...</div>
+        <pre id="health-response"></pre>
+    </div>
+
+    <div class="test-section">
+        <h2>Authentication Test</h2>
+        <div id="auth-status" class="pending">Testing...</div>
+        <pre id="auth-response"></pre>
+    </div>
+
+    <script>
+        const API_URL = 'https://pmackstack-production-93dc.up.railway.app';
+        
+        // Test health endpoint
+        fetch(`${API_URL}/health`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('health-status').innerHTML = '<span class="success">✓ Health check passed</span>';
+                document.getElementById('health-response').textContent = JSON.stringify(data, null, 2);
+            })
+            .catch(error => {
+                document.getElementById('health-status').innerHTML = '<span class="error">✗ Health check failed</span>';
+                document.getElementById('health-response').textContent = error.message;
+            });
+
+        // Test login endpoint
+        fetch(`${API_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email: 'exec@kilwins.com',
+                password: 'demo123'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('auth-status').innerHTML = '<span class="success">✓ Authentication working</span>';
+                document.getElementById('auth-response').textContent = JSON.stringify(data, null, 2);
+            } else {
+                document.getElementById('auth-status').innerHTML = '<span class="error">✗ Authentication failed</span>';
+                document.getElementById('auth-response').textContent = JSON.stringify(data, null, 2);
+            }
+        })
+        .catch(error => {
+            document.getElementById('auth-status').innerHTML = '<span class="error">✗ Authentication error</span>';
+            document.getElementById('auth-response').textContent = error.message;
+        });
+    </script>
+</body>
+</html> 
