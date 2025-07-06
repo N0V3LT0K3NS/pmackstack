@@ -16,6 +16,11 @@ export default defineConfig(({ mode }) => {
         '@shared': path.resolve(__dirname, '../shared'),
       },
     },
+    // Define global constants to replace during build
+    define: {
+      // Ensure VITE_API_URL is available in production builds
+      'import.meta.env.VITE_API_URL': JSON.stringify(env.VITE_API_URL || 'http://localhost:3002'),
+    },
     server: {
       proxy: {
         '/api': {
