@@ -9,15 +9,6 @@ import type { DashboardFilters } from '@shared/types/models';
 // Use environment variable for API URL, fallback to localhost
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002';
 
-// Debug logging
-console.log('🔧 API Configuration:', {
-  VITE_API_URL: import.meta.env.VITE_API_URL,
-  API_BASE_URL,
-  MODE: import.meta.env.MODE,
-  VITE_ENV: import.meta.env.VITE_ENV,
-  allEnvVars: import.meta.env
-});
-
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api`,
   headers: {
@@ -26,16 +17,9 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Debug interceptor
+// Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    console.log('🚀 API Request:', {
-      method: config.method,
-      url: config.url,
-      baseURL: config.baseURL,
-      fullURL: `${config.baseURL}${config.url}`
-    });
-    
     // Add auth token to all requests except login
     const token = localStorage.getItem('auth_token');
     if (token) {
@@ -50,22 +34,8 @@ api.interceptors.request.use(
 
 // Response interceptor for error handling
 api.interceptors.response.use(
-  (response) => {
-    console.log('✅ API Response:', {
-      status: response.status,
-      url: response.config.url,
-      data: response.data
-    });
-    return response;
-  },
+  (response) => response,
   (error) => {
-    console.error('❌ API Error:', {
-      status: error.response?.status,
-      url: error.config?.url,
-      message: error.message,
-      response: error.response?.data
-    });
-    
     if (error.response?.status === 401) {
       // Handle unauthorized - redirect to login
       localStorage.removeItem('auth_token');

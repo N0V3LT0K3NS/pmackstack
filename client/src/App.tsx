@@ -10,7 +10,6 @@ import { Login } from '@/pages/Login';
 import { DataEntry } from '@/pages/DataEntry';
 import { RenojaDashboard } from '@/pages/RenojaDashboard';
 import { RenojaDataEntry } from '@/pages/RenojaDataEntry';
-import { DebugInfo } from '@/components/DebugInfo';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -26,7 +25,6 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <DebugInfo />
         <Router>
           <Routes>
             <Route path="/login" element={<Login />} />
