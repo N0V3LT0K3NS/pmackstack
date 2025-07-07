@@ -9,7 +9,7 @@ import { Dashboard } from '@/pages/Dashboard';
 import { Login } from '@/pages/Login';
 import { DataEntry } from '@/pages/DataEntry';
 import { RenojaDashboard } from '@/pages/RenojaDashboard';
-import { RenojaDataEntry } from '@/pages/RenojaDataEntry';
+import RenojaDataEntry from '@/pages/RenojaDataEntry';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -37,6 +37,9 @@ function App() {
               }
             >
               <Route index element={<Dashboard />} />
+              <Route path="data-entry" element={<DataEntry />} />
+              <Route path="renoja" element={<RenojaDashboard />} />
+              <Route path="renoja/data-entry" element={<RenojaDataEntry />} />
               <Route path="stores" element={<div>Stores Page</div>} />
               <Route path="analytics" element={<div>Analytics Page</div>} />
               <Route path="reports" element={<div>Reports Page</div>} />
@@ -44,7 +47,6 @@ function App() {
               <Route path="forecasts" element={<div>Forecasts Page</div>} />
               <Route path="schedule" element={<div>Schedule Page</div>} />
               <Route path="settings" element={<div>Settings Page</div>} />
-              <Route path="data-entry" element={<DataEntry />} />
             </Route>
           </Routes>
         </Router>
