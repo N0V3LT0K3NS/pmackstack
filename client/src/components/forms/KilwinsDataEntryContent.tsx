@@ -2,10 +2,33 @@ import React, { useState } from 'react';
 import { WeeklyDataForm } from './WeeklyDataForm';
 import CSVImportForm from './CSVImportForm';
 import RecentEntriesTable from './RecentEntriesTable';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function KilwinsDataEntryContent() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'manual' | 'import' | 'recent'>('manual');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Check if user has write permissions
+  const hasWritePermission = () => {
+    if (user?.role === 'executive' || user?.role === 'bookkeeper') return true;
+    
+    // For managers, only renoja user has write permissions
+    if (user?.role === 'manager') {
+      return user.email === 'renoja';
+    }
+    
+    return false;
+  };
+
+  const isReadOnly = !hasWritePermission();
+
+  // If read-only, default to recent tab
+  React.useEffect(() => {
+    if (isReadOnly) {
+      setActiveTab('recent');
+    }
+  }, [isReadOnly]);
 
   const handleFormSuccess = () => {
     setMessage({ type: 'success', text: 'Weekly data submitted successfully!' });
@@ -25,11 +48,13 @@ export function KilwinsDataEntryContent() {
     setTimeout(() => setMessage(null), 8000);
   };
 
-  const tabs = [
-    { id: 'manual', label: 'Manual Entry', icon: '📝' },
-    { id: 'import', label: 'CSV Import', icon: '📄' },
-    { id: 'recent', label: 'Recent Entries', icon: '🕒' }
-  ] as const;
+  const tabs = isReadOnly 
+    ? [{ id: 'recent', label: 'Recent Entries', icon: '🕒' }] as const
+    : [
+        { id: 'manual', label: 'Manual Entry', icon: '📝' },
+        { id: 'import', label: 'CSV Import', icon: '📄' },
+        { id: 'recent', label: 'Recent Entries', icon: '🕒' }
+      ] as const;
 
   return (
     <div className="space-y-6">
@@ -44,12 +69,14 @@ export function KilwinsDataEntryContent() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="space-y-2">
-        <p className="text-gray-600">
-          Manage weekly sales, labor, and operational data for Kilwins locations
-        </p>
-      </div>
+      {/* Header - only show for write users */}
+      {!isReadOnly && (
+        <div className="space-y-2">
+          <p className="text-gray-600">
+            Manage weekly sales, labor, and operational data for Kilwins locations
+          </p>
+        </div>
+      )}
 
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">
@@ -57,7 +84,7 @@ export function KilwinsDataEntryContent() {
           {tabs.map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => setActiveTab(tab.id as any)}
               className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'border-purple-500 text-purple-600'
@@ -73,14 +100,14 @@ export function KilwinsDataEntryContent() {
 
       {/* Tab Content */}
       <div className="mt-6">
-        {activeTab === 'manual' && (
+        {activeTab === 'manual' && !isReadOnly && (
           <WeeklyDataForm 
             onSuccess={handleFormSuccess}
             onError={handleFormError}
           />
         )}
 
-        {activeTab === 'import' && (
+        {activeTab === 'import' && !isReadOnly && (
           <CSVImportForm 
             onSuccess={handleImportSuccess}
           />

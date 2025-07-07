@@ -5,6 +5,7 @@ export interface User {
   email: string;
   full_name: string;
   role: 'executive' | 'bookkeeper' | 'manager';
+  stores?: string[];
 }
 
 export interface AuthResponse {

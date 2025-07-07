@@ -5,9 +5,13 @@ import { RenojaDataEntryContent } from '@/components/forms/RenojaDataEntryConten
 import { 
   FileTextIcon, 
   ActivityIcon,
+  AlertCircle,
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Card } from '@/components/ui/card';
 
 export const DataEntry: React.FC = () => {
+  const { user } = useAuth();
   const [activeBrand, setActiveBrand] = useState<'kilwins' | 'renoja'>('kilwins');
 
   // Persist tab selection to localStorage
@@ -22,6 +26,20 @@ export const DataEntry: React.FC = () => {
     setActiveBrand(brand);
     localStorage.setItem('data-entry-active-brand', brand);
   };
+
+  // Check if user has write permissions
+  const hasWritePermission = () => {
+    if (user?.role === 'executive' || user?.role === 'bookkeeper') return true;
+    
+    // For managers, only renoja user has write permissions
+    if (user?.role === 'manager') {
+      return user.email === 'renoja';
+    }
+    
+    return false;
+  };
+
+  const isReadOnly = !hasWritePermission();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50/50">
@@ -62,7 +80,36 @@ export const DataEntry: React.FC = () => {
 
         {/* Brand-Specific Content */}
         {activeBrand === 'kilwins' ? (
-          <KilwinsDataEntryContent />
+          <>
+            <div className="mb-6">
+              <h1 className="text-3xl font-bold text-gray-900">Kilwins Data Entry</h1>
+              {isReadOnly && (
+                <Card className="mt-4 p-4 bg-amber-50 border-amber-200">
+                  <div className="flex items-center">
+                    <AlertCircle className="h-5 w-5 text-amber-600 mr-2" />
+                    <p className="text-sm text-amber-800">
+                      You have read-only access. You can view recent entries but cannot submit new data.
+                    </p>
+                  </div>
+                </Card>
+              )}
+            </div>
+            
+            {isReadOnly ? (
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4">Recent Entries (Read Only)</h2>
+                <p className="text-gray-600 mb-6">
+                  You can view recent data entries below. Contact an administrator if you need write access.
+                </p>
+                {/* Show only the recent entries table */}
+                <div className="mt-6">
+                  <KilwinsDataEntryContent />
+                </div>
+              </Card>
+            ) : (
+              <KilwinsDataEntryContent />
+            )}
+          </>
         ) : (
           <RenojaDataEntryContent />
         )}
