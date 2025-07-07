@@ -18,7 +18,7 @@ const ROLES = ['executive', 'bookkeeper', 'manager'];
 // Available stores for managers
 const STORES = {
   kilwins: ['anna', 'char', 'fell', 'vabe', 'will'],
-  renoja: ['ren001', 'ren002', 'ren003']
+  renoja: ['ren001', 'ren002']
 };
 
 function question(prompt) {

@@ -19,11 +19,16 @@ interface StoreInfo {
 }
 
 const storeInfo: Record<string, StoreInfo> = {
+  // Kilwins Ice Cream Stores
   'anna': { code: 'anna', name: 'Annapolis', location: 'Maryland', color: 'bg-red-500', performance: 'high' },
   'char': { code: 'char', name: 'Charlottesville', location: 'Virginia', color: 'bg-green-500', performance: 'high' },
   'fell': { code: 'fell', name: 'Fells Point', location: 'Maryland', color: 'bg-blue-500', performance: 'medium' },
   'vabe': { code: 'vabe', name: 'Virginia Beach', location: 'Virginia', color: 'bg-yellow-500', performance: 'medium' },
-  'will': { code: 'will', name: 'Williamsburg', location: 'Virginia', color: 'bg-purple-500', performance: 'high' }
+  'will': { code: 'will', name: 'Williamsburg', location: 'Virginia', color: 'bg-purple-500', performance: 'high' },
+  
+  // Renoja Wellness Studios
+  'ren001': { code: 'ren001', name: 'Colorado Springs', location: 'Colorado', color: 'bg-teal-500', performance: 'high' },
+  'ren002': { code: 'ren002', name: 'Orlando', location: 'Florida', color: 'bg-orange-500', performance: 'high' }
 };
 
 export function StoreFilter({ selectedStores, onStoreChange }: StoreFilterProps) {
